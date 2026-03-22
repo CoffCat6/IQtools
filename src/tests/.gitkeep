@@ -1,0 +1,3 @@
+# Tests are located in the project root tests/ directory.
+# This file serves as a placeholder for the src/tests subdirectory.
+# Tests are managed via the root tests/CMakeLists.txt
