@@ -1,173 +1,154 @@
 #include "logger.h"
 
-#include <cstdlib>
-#include <QtCore/QDateTime>
-#include <QtCore/QDir>
-#include <QtCore/QIODevice>
-#include <QtCore/QMutexLocker>
-#include <QtCore/QTextStream>
-
 namespace iqtools::infra::logging {
 
 LoggingConfig Logger::s_config {};
-QFile Logger::s_logFile {};
-QMutex Logger::s_mutex {};
-bool Logger::s_initialized = false;
-QtMessageHandler Logger::s_previousHandler = nullptr;
 
 void Logger::initialize(const LoggingConfig& config)
 {
-    QMutexLocker locker(&s_mutex);
-
-    if (s_initialized) {
-        return;
-    }
-
     s_config = config;
 
-    if (s_config.enableFileOutput && !s_config.logDirectory.isEmpty()) {
-        QDir().mkpath(s_config.logDirectory);
-        s_logFile.setFileName(QDir(s_config.logDirectory).filePath(s_config.logFileName));
-        s_logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    LogManagerConfig managerConfig;
+    managerConfig.logDirectory = config.logDirectory;
+    managerConfig.enableConsoleOutput = config.enableConsoleOutput;
+    managerConfig.enableFileOutput = config.enableFileOutput;
+    managerConfig.minimumLevel = toSeverity(config.minimumLevel);
+    managerConfig.forwardToPreviousHandler = config.forwardToPreviousHandler;
+
+    const int dotIndex = config.logFileName.lastIndexOf(QLatin1Char('.'));
+    if (dotIndex > 0) {
+        managerConfig.filePrefix = config.logFileName.left(dotIndex);
+    } else if (!config.logFileName.isEmpty()) {
+        managerConfig.filePrefix = config.logFileName;
     }
 
-    installQtMessageHandler();
-    s_initialized = true;
-    locker.unlock();
-
-    info(QStringLiteral("infra.logging"), QStringLiteral("Logger initialized"));
+    LogManager::instance().initialize(managerConfig);
 }
 
 void Logger::shutdown()
 {
-    QMutexLocker locker(&s_mutex);
+    LogManager::instance().shutdown();
+}
 
-    if (!s_initialized) {
-        return;
+LoggingConfig Logger::config()
+{
+    return s_config;
+}
+
+bool Logger::applyConfig(const LoggingConfig& config)
+{
+    if (config.enableFileOutput) {
+        const QString directory = config.logDirectory.isEmpty()
+                                      ? LogManager::instance().config().logDirectory
+                                      : config.logDirectory;
+        if (!directory.isEmpty() && !LogManager::isPathWritable(directory)) {
+            return false;
+        }
     }
 
-    if (s_logFile.isOpen()) {
-        QTextStream stream(&s_logFile);
-        stream << "Logger shutdown" << Qt::endl;
-        s_logFile.flush();
-        s_logFile.close();
+    s_config = config;
+
+    LogManagerConfig managerConfig;
+    managerConfig.logDirectory = config.logDirectory;
+    managerConfig.enableConsoleOutput = config.enableConsoleOutput;
+    managerConfig.enableFileOutput = config.enableFileOutput;
+    managerConfig.minimumLevel = toSeverity(config.minimumLevel);
+    managerConfig.forwardToPreviousHandler = config.forwardToPreviousHandler;
+
+    const int dotIndex = config.logFileName.lastIndexOf(QLatin1Char('.'));
+    if (dotIndex > 0) {
+        managerConfig.filePrefix = config.logFileName.left(dotIndex);
+    } else if (!config.logFileName.isEmpty()) {
+        managerConfig.filePrefix = config.logFileName;
     }
 
-    uninstallQtMessageHandler();
-    s_initialized = false;
+    LogManager::instance().updateConfig(managerConfig);
+    return true;
 }
 
-void Logger::debug(const QString& category, const QString& message)
+bool Logger::isLogDirectoryWritable(const QString& directoryPath)
 {
-    write(LogLevel::Debug, category, message);
+    return LogManager::isPathWritable(directoryPath);
 }
 
-void Logger::info(const QString& category, const QString& message)
+void Logger::log(LogLevel level,
+                 const QString& category,
+                 const QString& message,
+                 const char* file,
+                 int line,
+                 const char* function)
 {
-    write(LogLevel::Info, category, message);
+    const QByteArray utf8Category = category.toUtf8();
+    LogManager::instance().logMessage(toSeverity(level),
+                                      utf8Category.constData(),
+                                      message,
+                                      file,
+                                      line,
+                                      function);
 }
 
-void Logger::warning(const QString& category, const QString& message)
+void Logger::debug(const QString& category,
+                   const QString& message,
+                   const char* file,
+                   int line,
+                   const char* function)
 {
-    write(LogLevel::Warning, category, message);
+    log(LogLevel::Debug, category, message, file, line, function);
 }
 
-void Logger::error(const QString& category, const QString& message)
+void Logger::info(const QString& category,
+                  const QString& message,
+                  const char* file,
+                  int line,
+                  const char* function)
 {
-    write(LogLevel::Error, category, message);
+    log(LogLevel::Info, category, message, file, line, function);
 }
 
-void Logger::write(LogLevel level, const QString& category, const QString& message)
+void Logger::warning(const QString& category,
+                     const QString& message,
+                     const char* file,
+                     int line,
+                     const char* function)
 {
-    if (level < s_config.minimumLevel) {
-        return;
-    }
-
-    const LogEntry entry {
-        QDateTime::currentDateTime(),
-        level,
-        category,
-        message,
-    };
-
-    const QString line = format(entry);
-
-    QMutexLocker locker(&s_mutex);
-
-    if (s_config.enableConsoleOutput) {
-        QTextStream console(stderr);
-        console << line << Qt::endl;
-    }
-
-    if (s_config.enableFileOutput && s_logFile.isOpen()) {
-        QTextStream fileStream(&s_logFile);
-        fileStream << line << Qt::endl;
-        s_logFile.flush();
-    }
+    log(LogLevel::Warning, category, message, file, line, function);
 }
 
-QString Logger::format(const LogEntry& entry)
+void Logger::error(const QString& category,
+                   const QString& message,
+                   const char* file,
+                   int line,
+                   const char* function)
 {
-    return QStringLiteral("[%1] [%2] [%3] %4")
-        .arg(entry.timestamp.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz")))
-        .arg(QString::fromUtf8(levelToString(entry.level)))
-        .arg(entry.category)
-        .arg(entry.message);
+    log(LogLevel::Error, category, message, file, line, function);
 }
 
-const char* Logger::levelToString(LogLevel level)
+void Logger::critical(const QString& category,
+                      const QString& message,
+                      const char* file,
+                      int line,
+                      const char* function)
+{
+    log(LogLevel::Critical, category, message, file, line, function);
+}
+
+LogSeverity Logger::toSeverity(LogLevel level)
 {
     switch (level) {
     case LogLevel::Debug:
-        return "DEBUG";
+        return LogSeverity::Debug;
     case LogLevel::Info:
-        return "INFO";
+        return LogSeverity::Info;
     case LogLevel::Warning:
-        return "WARNING";
+        return LogSeverity::Warning;
+    case LogLevel::Critical:
     case LogLevel::Error:
-        return "ERROR";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-void Logger::installQtMessageHandler()
-{
-    s_previousHandler = qInstallMessageHandler(&Logger::qtMessageHandler);
-}
-
-void Logger::uninstallQtMessageHandler()
-{
-    qInstallMessageHandler(s_previousHandler);
-    s_previousHandler = nullptr;
-}
-
-void Logger::qtMessageHandler(QtMsgType type,
-                              const QMessageLogContext& context,
-                              const QString& message)
-{
-    QString category = context.category ? QString::fromUtf8(context.category)
-                                        : QStringLiteral("qt");
-
-    switch (type) {
-    case QtDebugMsg:
-        write(LogLevel::Debug, category, message);
-        break;
-    case QtInfoMsg:
-        write(LogLevel::Info, category, message);
-        break;
-    case QtWarningMsg:
-        write(LogLevel::Warning, category, message);
-        break;
-    case QtCriticalMsg:
-    case QtFatalMsg:
-        write(LogLevel::Error, category, message);
-        break;
+        return LogSeverity::Critical;
+    case LogLevel::Fatal:
+        return LogSeverity::Fatal;
     }
 
-    if (type == QtFatalMsg) {
-        abort();
-    }
+    return LogSeverity::Debug;
 }
 
 }  // namespace iqtools::infra::logging

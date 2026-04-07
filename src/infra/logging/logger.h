@@ -3,13 +3,10 @@
 #ifndef IQTOOLS_LOGGER_H
 #define IQTOOLS_LOGGER_H
 
-#include <QtCore/QFile>
-#include <QtCore/QMessageLogContext>
-#include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QtGlobal>
 
-class QDateTime;
+#include "log_manager.h"
 
 #include "log_entry.h"
 
@@ -17,38 +14,59 @@ namespace iqtools::infra::logging {
 
 struct LoggingConfig {
     QString logDirectory;
-    QString logFileName {"iqtools.log"};
+    QString logFileName {QStringLiteral("iqtools.log")};
     bool enableConsoleOutput {true};
     bool enableFileOutput {true};
     LogLevel minimumLevel {LogLevel::Debug};
+    bool forwardToPreviousHandler {false};
 };
 
 class Logger {
 public:
     static void initialize(const LoggingConfig& config);
     static void shutdown();
+    static LoggingConfig config();
+    static bool applyConfig(const LoggingConfig& config);
+    static bool isLogDirectoryWritable(const QString& directoryPath);
 
-    static void debug(const QString& category, const QString& message);
-    static void info(const QString& category, const QString& message);
-    static void warning(const QString& category, const QString& message);
-    static void error(const QString& category, const QString& message);
+    static void log(LogLevel level,
+                    const QString& category,
+                    const QString& message,
+                    const char* file = __FILE__,
+                    int line = __LINE__,
+                    const char* function = Q_FUNC_INFO);
+
+    static void debug(const QString& category,
+                      const QString& message,
+                      const char* file = __FILE__,
+                      int line = __LINE__,
+                      const char* function = Q_FUNC_INFO);
+    static void info(const QString& category,
+                     const QString& message,
+                     const char* file = __FILE__,
+                     int line = __LINE__,
+                     const char* function = Q_FUNC_INFO);
+    static void warning(const QString& category,
+                        const QString& message,
+                        const char* file = __FILE__,
+                        int line = __LINE__,
+                        const char* function = Q_FUNC_INFO);
+    static void error(const QString& category,
+                      const QString& message,
+                      const char* file = __FILE__,
+                      int line = __LINE__,
+                      const char* function = Q_FUNC_INFO);
+    static void critical(const QString& category,
+                         const QString& message,
+                         const char* file = __FILE__,
+                         int line = __LINE__,
+                         const char* function = Q_FUNC_INFO);
 
 private:
-    static void write(LogLevel level, const QString& category, const QString& message);
-    static QString format(const LogEntry& entry);
-    static const char* levelToString(LogLevel level);
-    static void installQtMessageHandler();
-    static void uninstallQtMessageHandler();
-    static void qtMessageHandler(QtMsgType type,
-                                 const QMessageLogContext& context,
-                                 const QString& message);
+    static LogSeverity toSeverity(LogLevel level);
 
 private:
     static LoggingConfig s_config;
-    static QFile s_logFile;
-    static QMutex s_mutex;
-    static bool s_initialized;
-    static QtMessageHandler s_previousHandler;
 };
 
 }  // namespace iqtools::infra::logging

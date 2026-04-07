@@ -1,20 +1,204 @@
 #include "main_window.h"
 
+#include <QtCore/QStringList>
+#include <QtCore/QCoreApplication>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QFrame>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
 #include "core/services/log_service.h"
+#include "core/services/theme_manager.h"
 
 namespace iqtools::app {
+
+namespace {
+
+QFrame* createBentoCard(const QString& title,
+                        const QString& text,
+                        const QString& meta,
+                        const QString& variant,
+                        QWidget* parent)
+{
+    auto* card = new QFrame(parent);
+    card->setObjectName(QStringLiteral("BentoCard"));
+    if (!variant.isEmpty()) {
+        card->setProperty("variant", variant);
+    }
+
+    auto* cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(20, 18, 20, 18);
+    cardLayout->setSpacing(10);
+
+    auto* titleLabel = new QLabel(title, card);
+    titleLabel->setObjectName(QStringLiteral("CardTitle"));
+
+    auto* textLabel = new QLabel(text, card);
+    textLabel->setObjectName(QStringLiteral("CardText"));
+    textLabel->setWordWrap(true);
+
+    auto* metaLabel = new QLabel(meta, card);
+    metaLabel->setObjectName(QStringLiteral("CardMeta"));
+
+    cardLayout->addWidget(titleLabel);
+    cardLayout->addWidget(textLabel, 1);
+    cardLayout->addWidget(metaLabel);
+
+    return card;
+}
+
+QWidget* createPlaceholderPage(const QString& title, const QString& desc, QWidget* parent)
+{
+    auto* page = new QWidget(parent);
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(12);
+
+    auto* card = createBentoCard(title, desc, QStringLiteral("Coming soon"), QString(), page);
+    layout->addWidget(card);
+    layout->addStretch();
+
+    return page;
+}
+
+QWidget* createHomePage(QWidget* parent)
+{
+    auto* page = new QWidget(parent);
+    auto* pageLayout = new QVBoxLayout(page);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto* scrollArea = new QScrollArea(page);
+    scrollArea->setObjectName(QStringLiteral("MainScroll"));
+    scrollArea->setWidgetResizable(true);
+
+    auto* gridHost = new QWidget(scrollArea);
+    gridHost->setObjectName(QStringLiteral("BentoGrid"));
+
+    auto* grid = new QGridLayout(gridHost);
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setHorizontalSpacing(16);
+    grid->setVerticalSpacing(16);
+
+    auto* cardA = createBentoCard(
+        QStringLiteral("工具总览"),
+        QStringLiteral("集中管理截图、翻译与插件化工具，保持清晰的模块边界。"),
+        QStringLiteral("Overview"),
+        QStringLiteral("highlight"),
+        gridHost);
+
+    auto* cardB = createBentoCard(
+        QStringLiteral("截图工具"),
+        QStringLiteral("区域截图 / 全屏截图 / 结果处理链（OCR、翻译、导出）预留。"),
+        QStringLiteral("Capture"),
+        QString(),
+        gridHost);
+
+    auto* cardC = createBentoCard(
+        QStringLiteral("翻译工具"),
+        QStringLiteral("统一翻译流程 UI，后续可接入多个 provider。"),
+        QStringLiteral("Translate"),
+        QStringLiteral("accent"),
+        gridHost);
+
+    auto* cardD = createBentoCard(
+        QStringLiteral("插件系统"),
+        QStringLiteral("Qt 原生插件机制，先稳接口，再扩展生态。"),
+        QStringLiteral("Plugin"),
+        QString(),
+        gridHost);
+
+    auto* cardE = createBentoCard(
+        QStringLiteral("主题系统"),
+        QStringLiteral("内置浅色/深色主题，后续支持自定义 QSS 扩展。"),
+        QStringLiteral("Theme"),
+        QString(),
+        gridHost);
+
+    auto* cardF = createBentoCard(
+        QStringLiteral("日志系统"),
+        QStringLiteral("统一日志入口，支持控制台与文件输出。"),
+        QStringLiteral("Logging"),
+        QString(),
+        gridHost);
+
+    grid->addWidget(cardA, 0, 0, 2, 2);
+    grid->addWidget(cardB, 0, 2, 1, 2);
+    grid->addWidget(cardC, 1, 2, 1, 1);
+    grid->addWidget(cardD, 1, 3, 1, 1);
+    grid->addWidget(cardE, 2, 0, 1, 2);
+    grid->addWidget(cardF, 2, 2, 1, 2);
+
+    grid->setColumnStretch(0, 1);
+    grid->setColumnStretch(1, 1);
+    grid->setColumnStretch(2, 1);
+    grid->setColumnStretch(3, 1);
+
+    scrollArea->setWidget(gridHost);
+    pageLayout->addWidget(scrollArea);
+    return page;
+}
+
+QWidget* createSettingsPage(QWidget* parent)
+{
+    auto* page = new QWidget(parent);
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(12);
+
+    auto* card = createBentoCard(
+        QStringLiteral("主题设置"),
+        QStringLiteral("选择默认主题（浅色/深色）。后续可扩展自定义主题。"),
+        QStringLiteral("Theme settings"),
+        QStringLiteral("highlight"),
+        page);
+
+    auto* cardLayout = qobject_cast<QVBoxLayout*>(card->layout());
+    if (cardLayout != nullptr) {
+        auto* row = new QWidget(card);
+        auto* rowLayout = new QHBoxLayout(row);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(10);
+
+        auto* lightBtn = new QPushButton(QStringLiteral("浅色主题"), row);
+        lightBtn->setObjectName(QStringLiteral("NavButton"));
+        auto* darkBtn = new QPushButton(QStringLiteral("深色主题"), row);
+        darkBtn->setObjectName(QStringLiteral("NavButton"));
+
+        rowLayout->addWidget(lightBtn);
+        rowLayout->addWidget(darkBtn);
+        rowLayout->addStretch();
+
+        QObject::connect(lightBtn, &QPushButton::clicked, row, []() {
+            auto* app = qobject_cast<QApplication*>(QCoreApplication::instance());
+            iqtools::core::ThemeManager::applyTheme(app, iqtools::core::AppTheme::Light);
+        });
+
+        QObject::connect(darkBtn, &QPushButton::clicked, row, []() {
+            auto* app = qobject_cast<QApplication*>(QCoreApplication::instance());
+            iqtools::core::ThemeManager::applyTheme(app, iqtools::core::AppTheme::Dark);
+        });
+
+        cardLayout->addWidget(row);
+    }
+
+    layout->addWidget(card);
+    layout->addStretch();
+    return page;
+}
+
+}  // namespace
 
 MainWindow::MainWindow(iqtools::core::AppContext* appContext, QWidget* parent)
     : QMainWindow(parent)
     , m_appContext(appContext)
 {
+    setObjectName(QStringLiteral("MainWindow"));
     setupUi();
     iqtools::core::LogService::info(QStringLiteral("app.shell"), QStringLiteral("Main window created"));
 }
@@ -22,29 +206,28 @@ MainWindow::MainWindow(iqtools::core::AppContext* appContext, QWidget* parent)
 void MainWindow::setupUi()
 {
     setWindowTitle(QStringLiteral("IQtools"));
-    resize(1200, 760);
+    resize(1280, 820);
 
     auto* central = new QWidget(this);
+    central->setObjectName(QStringLiteral("CentralRoot"));
+
     auto* rootLayout = new QHBoxLayout(central);
     rootLayout->setSpacing(0);
     rootLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Navigation panel
-    auto* navWidget = new QWidget(central);
-    navWidget->setFixedWidth(220);
-    navWidget->setStyleSheet(QStringLiteral("QWidget { background-color: #2b2b2b; }"));
-    auto* navLayout = new QVBoxLayout(navWidget);
-    navLayout->setContentsMargins(0, 20, 0, 0);
-    navLayout->setSpacing(4);
+    auto* navPanel = new QWidget(central);
+    navPanel->setObjectName(QStringLiteral("NavPanel"));
+    navPanel->setFixedWidth(240);
 
-    // App title
-    auto* titleLabel = new QLabel(QStringLiteral("IQtools"), navWidget);
-    titleLabel->setStyleSheet(QStringLiteral(
-        "QLabel { color: #ffffff; font-size: 18px; font-weight: bold; padding: 10px 20px; }"));
-    navLayout->addWidget(titleLabel);
-    navLayout->addSpacing(20);
+    auto* navLayout = new QVBoxLayout(navPanel);
+    navLayout->setContentsMargins(18, 18, 18, 18);
+    navLayout->setSpacing(8);
 
-    // Navigation items
+    auto* navTitle = new QLabel(QStringLiteral("IQtools"), navPanel);
+    navTitle->setObjectName(QStringLiteral("NavTitle"));
+    navLayout->addWidget(navTitle);
+    navLayout->addSpacing(8);
+
     const QStringList navItems = {
         QStringLiteral("首页"),
         QStringLiteral("截图工具"),
@@ -54,65 +237,58 @@ void MainWindow::setupUi()
     };
 
     for (int i = 0; i < navItems.size(); ++i) {
-        auto* btn = new QPushButton(navItems[i], navWidget);
-        btn->setFixedHeight(44);
+        auto* btn = new QPushButton(navItems[i], navPanel);
+        btn->setObjectName(QStringLiteral("NavButton"));
+        btn->setCheckable(true);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background-color: transparent; color: #cccccc; border: none; "
-            "text-align: left; padding-left: 20px; font-size: 14px; border-radius: 4px; } "
-            "QPushButton:hover { background-color: #3b3b3b; color: #ffffff; } "
-            "QPushButton:pressed { background-color: #4b4b4b; color: #ffffff; }"));
         connect(btn, &QPushButton::clicked, this, [this, i]() { onNavigationClicked(i); });
+        m_navigationButtons.append(btn);
         navLayout->addWidget(btn);
+    }
+
+    if (!m_navigationButtons.isEmpty()) {
+        m_navigationButtons.first()->setChecked(true);
     }
 
     navLayout->addStretch();
 
-    // Content area
-    auto* contentWidget = new QWidget(central);
-    auto* contentLayout = new QVBoxLayout(contentWidget);
-    contentLayout->setContentsMargins(30, 30, 30, 30);
+    auto* contentPanel = new QWidget(central);
+    contentPanel->setObjectName(QStringLiteral("ContentPanel"));
 
-    m_contentLabel = new QLabel(
-        QStringLiteral("<h1 style='color:#333;'>IQtools</h1>"
-                      "<p style='color:#666;font-size:14px;'>项目骨架已初始化。</p>"
-                      "<p style='color:#999;font-size:12px;'>请从左侧导航选择工具开始使用。</p>"),
-        contentWidget);
-    m_contentLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    auto* contentLayout = new QVBoxLayout(contentPanel);
+    contentLayout->setContentsMargins(20, 20, 20, 20);
 
-    auto* versionLabel = new QLabel(QStringLiteral("v0.1.0"), contentWidget);
-    versionLabel->setStyleSheet(QStringLiteral(
-        "QLabel { color: #999; font-size: 12px; padding-top: 10px; }"));
+    m_pageStack = new QStackedWidget(contentPanel);
+    m_pageStack->addWidget(createHomePage(m_pageStack));
+    m_pageStack->addWidget(createPlaceholderPage(QStringLiteral("截图工具"),
+                                                 QStringLiteral("截图工具页面（待实现）。"),
+                                                 m_pageStack));
+    m_pageStack->addWidget(createPlaceholderPage(QStringLiteral("翻译工具"),
+                                                 QStringLiteral("翻译工具页面（待实现）。"),
+                                                 m_pageStack));
+    m_pageStack->addWidget(createPlaceholderPage(QStringLiteral("插件管理"),
+                                                 QStringLiteral("插件管理页面（待实现）。"),
+                                                 m_pageStack));
+    m_pageStack->addWidget(createSettingsPage(m_pageStack));
 
-    contentLayout->addWidget(m_contentLabel);
-    contentLayout->addWidget(versionLabel);
-    contentLayout->addStretch();
+    contentLayout->addWidget(m_pageStack);
 
-    rootLayout->addWidget(navWidget);
-    rootLayout->addWidget(contentWidget, 1);
+    rootLayout->addWidget(navPanel);
+    rootLayout->addWidget(contentPanel, 1);
 
     setCentralWidget(central);
 }
 
 void MainWindow::onNavigationClicked(int index)
 {
-    const QStringList contentTexts = {
-        QStringLiteral("<h1 style='color:#333;'>首页</h1>"
-                       "<p style='color:#666;font-size:14px;'>欢迎使用 IQtools 工具箱。</p>"),
-        QStringLiteral("<h1 style='color:#333;'>截图工具</h1>"
-                       "<p style='color:#666;font-size:14px;'>截图工具页面（待实现）。</p>"),
-        QStringLiteral("<h1 style='color:#333;'>翻译工具</h1>"
-                       "<p style='color:#666;font-size:14px;'>翻译工具页面（待实现）。</p>"),
-        QStringLiteral("<h1 style='color:#333;'>插件管理</h1>"
-                       "<p style='color:#666;font-size:14px;'>插件管理页面（待实现）。</p>"),
-        QStringLiteral("<h1 style='color:#333;'>设置</h1>"
-                       "<p style='color:#666;font-size:14px;'>设置页面（待实现）。</p>")
-    };
+    for (int i = 0; i < m_navigationButtons.size(); ++i) {
+        m_navigationButtons[i]->setChecked(i == index);
+    }
 
-    if (index >= 0 && index < contentTexts.size()) {
-        m_contentLabel->setText(contentTexts[index]);
+    if (m_pageStack != nullptr && index >= 0 && index < m_pageStack->count()) {
+        m_pageStack->setCurrentIndex(index);
         iqtools::core::LogService::info(QStringLiteral("app.shell"),
-            QStringLiteral("Navigation: %1").arg(index));
+                                        QStringLiteral("Navigation switched: %1").arg(index));
     }
 }
 

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <QtCore/QList>
 #include <QtWidgets/QMainWindow>
 
-class QListWidget;
 class QLabel;
+class QPushButton;
+class QStackedWidget;
 
 namespace iqtools::core {
 class AppContext;
@@ -25,8 +27,8 @@ private:
 
 private:
     iqtools::core::AppContext* m_appContext {nullptr};
-    QListWidget* m_navigationList {nullptr};
-    QLabel* m_contentLabel {nullptr};
+    QList<QPushButton*> m_navigationButtons;
+    QStackedWidget* m_pageStack {nullptr};
 };
 
 }  // namespace iqtools::app

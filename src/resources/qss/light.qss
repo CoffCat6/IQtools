@@ -1,0 +1,118 @@
+/*
+ * IQtools - Light Theme (Bento inspired)
+ * Signals: soft cards, spacious grid, modern calm UI
+ */
+
+QMainWindow#MainWindow {
+    background: #f4f6fb;
+}
+
+QWidget#CentralRoot {
+    background: #f4f6fb;
+}
+
+QWidget#NavPanel {
+    background: #ffffff;
+    border-right: 1px solid #e4e8f0;
+}
+
+QLabel#NavTitle {
+    color: #1d2538;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 6px 6px 12px 6px;
+}
+
+QPushButton#NavButton {
+    min-height: 44px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0 14px;
+    text-align: left;
+    background: transparent;
+    color: #4f5a74;
+    font-size: 14px;
+}
+
+QPushButton#NavButton:hover {
+    background: #eef2fb;
+    color: #1d2a49;
+}
+
+QPushButton#NavButton:pressed,
+QPushButton#NavButton:checked {
+    background: #e2e9fb;
+    border-color: #c6d3f5;
+    color: #1a2f66;
+}
+
+QWidget#ContentPanel {
+    background: #f4f6fb;
+}
+
+QWidget#BentoGrid {
+    background: transparent;
+}
+
+QFrame#BentoCard {
+    background: #ffffff;
+    border: 1px solid #e3e8f3;
+    border-radius: 16px;
+}
+
+QFrame#BentoCard[variant="highlight"] {
+    background: #eef3ff;
+    border-color: #ccd9fb;
+}
+
+QFrame#BentoCard[variant="accent"] {
+    background: #ecf8f6;
+    border-color: #c9e7df;
+}
+
+QLabel#CardTitle {
+    color: #1b2438;
+    font-size: 18px;
+    font-weight: 650;
+}
+
+QLabel#CardText {
+    color: #5a6785;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+QLabel#CardMeta {
+    color: #7d8aa8;
+    font-size: 12px;
+}
+
+QScrollArea#MainScroll {
+    border: none;
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    width: 10px;
+    margin: 4px;
+    background: transparent;
+}
+
+QScrollBar::handle:vertical {
+    min-height: 28px;
+    border-radius: 5px;
+    background: #ced6e7;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #bac4db;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    border: none;
+    background: transparent;
+}

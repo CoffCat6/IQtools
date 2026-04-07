@@ -9,7 +9,9 @@ enum class LogLevel {
     Debug = 0,
     Info,
     Warning,
-    Error
+    Critical,
+    Error,
+    Fatal
 };
 
 }  // namespace iqtools::infra::logging
