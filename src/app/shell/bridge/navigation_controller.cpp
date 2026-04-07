@@ -22,6 +22,7 @@ QVariantList NavigationController::navigationItems() const
         QVariantMap{{QStringLiteral("label"), QStringLiteral("截图工具")}, {QStringLiteral("route"), QStringLiteral("capture")}},
         QVariantMap{{QStringLiteral("label"), QStringLiteral("翻译工具")}, {QStringLiteral("route"), QStringLiteral("translate")}},
         QVariantMap{{QStringLiteral("label"), QStringLiteral("插件管理")}, {QStringLiteral("route"), QStringLiteral("plugins")}},
+        QVariantMap{{QStringLiteral("label"), QStringLiteral("日志")}, {QStringLiteral("route"), QStringLiteral("logs")}},
         QVariantMap{{QStringLiteral("label"), QStringLiteral("设置")}, {QStringLiteral("route"), QStringLiteral("settings")}},
     };
 }

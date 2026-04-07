@@ -18,6 +18,11 @@ LogManager& LogManager::instance()
     return manager;
 }
 
+LogManager::LogManager(QObject* parent)
+    : QObject(parent)
+{
+}
+
 void LogManager::initialize(const LogManagerConfig& config)
 {
     QMutexLocker locker(&m_mutex);
@@ -167,6 +172,9 @@ void LogManager::logInternal(QtMsgType type,
     if (shouldForward && previousHandler != nullptr) {
         previousHandler(type, context, message);
     }
+
+    // Emit signal outside of mutex to avoid deadlocks
+    emit logEmitted(line, static_cast<int>(toSeverity(type)));
 
     if (type == QtFatalMsg) {
         std::abort();

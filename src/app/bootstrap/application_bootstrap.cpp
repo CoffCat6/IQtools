@@ -11,6 +11,7 @@
 #include <QtWidgets/QApplication>
 
 #include "app/shell/bridge/app_facade.h"
+#include "app/shell/bridge/log_console_controller.h"
 #include "app/shell/bridge/logging_settings_controller.h"
 #include "app/shell/bridge/navigation_controller.h"
 #include "app/shell/bridge/theme_controller.h"
@@ -75,6 +76,7 @@ void ApplicationBootstrap::initPresentation()
     m_themeController = std::make_unique<iqtools::app::bridge::ThemeController>();
     m_navigationController = std::make_unique<iqtools::app::bridge::NavigationController>();
     m_loggingSettingsController = std::make_unique<iqtools::app::bridge::LoggingSettingsController>();
+    m_logConsoleController = std::make_unique<iqtools::app::bridge::LogConsoleController>();
     m_appFacade = std::make_unique<iqtools::app::bridge::AppFacade>(
         m_themeController.get(),
         m_navigationController.get(),
@@ -88,6 +90,7 @@ void ApplicationBootstrap::initPresentation()
     rootContext->setContextProperty(QStringLiteral("navigationController"), m_navigationController.get());
     rootContext->setContextProperty(QStringLiteral("toolListModel"), m_toolListModel.get());
     rootContext->setContextProperty(QStringLiteral("loggingSettings"), m_loggingSettingsController.get());
+    rootContext->setContextProperty(QStringLiteral("logConsole"), m_logConsoleController.get());
 
     const QUrl mainQmlUrl(QStringLiteral("qrc:/IQtools/src/app/shell/qml/main.qml"));
     QObject::connect(m_qmlEngine.get(),

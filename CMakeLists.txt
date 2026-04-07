@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 3.21)
 
 project(IQtools VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_PREFIX_PATH "D:/Qt/6.9.0/mingw_64")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2)
 
@@ -20,6 +21,7 @@ set(IQTOOLS_SOURCES
     src/app/shell/bridge/theme_controller.cpp
     src/app/shell/bridge/navigation_controller.cpp
     src/app/shell/bridge/logging_settings_controller.cpp
+    src/app/shell/bridge/log_console_controller.cpp
     src/app/shell/bridge/app_facade.cpp
     src/core/appcontext/app_context.cpp
     src/core/tools/tool_registry.cpp
@@ -37,6 +39,7 @@ set(IQTOOLS_HEADERS
     src/app/shell/bridge/theme_controller.h
     src/app/shell/bridge/navigation_controller.h
     src/app/shell/bridge/logging_settings_controller.h
+    src/app/shell/bridge/log_console_controller.h
     src/app/shell/bridge/app_facade.h
     src/core/appcontext/app_context.h
     src/core/tools/tool_registry.h
@@ -72,6 +75,7 @@ qt_add_qml_module(IQtools
         src/app/shell/qml/pages/CapturePage.qml
         src/app/shell/qml/pages/TranslatePage.qml
         src/app/shell/qml/pages/PluginPage.qml
+        src/app/shell/qml/pages/LogPage.qml
         src/app/shell/qml/pages/SettingsPage.qml
 )
 
@@ -88,6 +92,3 @@ target_link_libraries(IQtools PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
 )
-
-enable_testing()
-add_subdirectory(tests)

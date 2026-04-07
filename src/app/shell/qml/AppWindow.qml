@@ -40,6 +40,7 @@ ApplicationWindow {
                     case "capture": return capturePage
                     case "translate": return translatePage
                     case "plugins": return pluginPage
+                    case "logs": return logPage
                     case "settings": return settingsPage
                     default: return homePage
                     }
@@ -52,5 +53,6 @@ ApplicationWindow {
     Component { id: capturePage; CapturePage {} }
     Component { id: translatePage; TranslatePage {} }
     Component { id: pluginPage; PluginPage {} }
+    Component { id: logPage; LogPage {} }
     Component { id: settingsPage; SettingsPage {} }
 }

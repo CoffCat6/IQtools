@@ -41,10 +41,10 @@ Rectangle {
 
         Item { Layout.fillHeight: true }
 
-        ThemedButton {
-            Layout.fillWidth: true
-            text: themeController.dark ? "切换到浅色" : "切换到深色"
-            onClicked: themeController.toggleTheme()
-        }
+        // ThemedButton {
+        //     Layout.fillWidth: true
+        //     text: themeController.dark ? "切换到浅色" : "切换到深色"
+        //     onClicked: themeController.toggleTheme()
+        // }
     }
 }

@@ -5,6 +5,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QMessageLogContext>
 #include <QtCore/QMutex>
+#include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QtGlobal>
 
@@ -28,7 +29,9 @@ struct LogManagerConfig {
     bool forwardToPreviousHandler {false};
 };
 
-class LogManager {
+class LogManager : public QObject {
+    Q_OBJECT
+
 public:
     static LogManager& instance();
 
@@ -50,9 +53,12 @@ public:
                     int line,
                     const char* function);
 
+signals:
+    void logEmitted(const QString& formattedLine, int severity);
+
 private:
-    LogManager() = default;
-    ~LogManager() = default;
+    explicit LogManager(QObject* parent = nullptr);
+    ~LogManager() override = default;
     LogManager(const LogManager&) = delete;
     LogManager& operator=(const LogManager&) = delete;
 

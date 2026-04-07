@@ -14,6 +14,7 @@ class ToolListModel;
 class ThemeController;
 class NavigationController;
 class LoggingSettingsController;
+class LogConsoleController;
 class AppFacade;
 }
 
@@ -41,6 +42,7 @@ private:
     std::unique_ptr<iqtools::app::bridge::ThemeController> m_themeController;
     std::unique_ptr<iqtools::app::bridge::NavigationController> m_navigationController;
     std::unique_ptr<iqtools::app::bridge::LoggingSettingsController> m_loggingSettingsController;
+    std::unique_ptr<iqtools::app::bridge::LogConsoleController> m_logConsoleController;
     std::unique_ptr<iqtools::app::bridge::AppFacade> m_appFacade;
 };
 
