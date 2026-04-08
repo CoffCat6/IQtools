@@ -11,7 +11,14 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_PREFIX_PATH "D:/Qt/6.9.0/mingw_64")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2)
+# Version macros for use in code
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d")
+add_compile_definitions(
+    IQTOOLS_VERSION="${PROJECT_VERSION}"
+    IQTOOLS_BUILD_DATE="${BUILD_DATE}"
+)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2 Network LinguistTools)
 
 set(IQTOOLS_SOURCES
     src/app/main.cpp
@@ -22,14 +29,22 @@ set(IQTOOLS_SOURCES
     src/app/shell/bridge/navigation_controller.cpp
     src/app/shell/bridge/logging_settings_controller.cpp
     src/app/shell/bridge/log_console_controller.cpp
+    src/app/shell/bridge/settings_controller.cpp
+    src/app/shell/bridge/window_controller.cpp
+    src/app/shell/bridge/update_controller.cpp
     src/app/shell/bridge/app_facade.cpp
     src/core/appcontext/app_context.cpp
     src/core/tools/tool_registry.cpp
     src/core/services/log_service.cpp
     src/core/services/theme_manager.cpp
+    src/core/services/auto_start_manager.cpp
+    src/core/services/i18n_manager.cpp
+    src/core/services/update_checker.cpp
+    src/core/settings/settings_manager.cpp
     src/core/plugin/plugin_manager.cpp
     src/infra/logging/log_manager.cpp
     src/infra/logging/logger.cpp
+    src/infra/storage/settings_storage.cpp
 )
 
 set(IQTOOLS_HEADERS
@@ -40,12 +55,19 @@ set(IQTOOLS_HEADERS
     src/app/shell/bridge/navigation_controller.h
     src/app/shell/bridge/logging_settings_controller.h
     src/app/shell/bridge/log_console_controller.h
+    src/app/shell/bridge/settings_controller.h
+    src/app/shell/bridge/window_controller.h
+    src/app/shell/bridge/update_controller.h
     src/app/shell/bridge/app_facade.h
     src/core/appcontext/app_context.h
     src/core/tools/tool_registry.h
     src/core/tools/tool_metadata.h
     src/core/services/log_service.h
     src/core/services/theme_manager.h
+    src/core/services/auto_start_manager.h
+    src/core/services/i18n_manager.h
+    src/core/services/update_checker.h
+    src/core/settings/settings_manager.h
     src/core/plugin/plugin_manager.h
     src/plugin-api/iplugin.h
     src/plugin-api/itool_plugin.h
@@ -55,6 +77,7 @@ set(IQTOOLS_HEADERS
     src/infra/logging/log_manager.h
     src/infra/logging/log_level.h
     src/infra/logging/log_entry.h
+    src/infra/storage/settings_storage.h
 )
 
 qt_add_executable(IQtools WIN32
@@ -84,6 +107,18 @@ target_include_directories(IQtools PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Translation files
+set(TS_FILES
+    src/resources/translations/iqtools_zh_CN.ts
+    src/resources/translations/iqtools_en_US.ts
+)
+
+# Generate .qm files from .ts files and embed them as resources
+qt_add_translations(IQtools
+    TS_FILES ${TS_FILES}
+    RESOURCE_PREFIX "/translations"
+)
+
 target_link_libraries(IQtools PRIVATE
     Qt6::Core
     Qt6::Gui
@@ -91,4 +126,5 @@ target_link_libraries(IQtools PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Network
 )

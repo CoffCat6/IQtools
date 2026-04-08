@@ -4,7 +4,7 @@ namespace iqtools::app::bridge {
 
 ThemeController::ThemeController(QObject* parent)
     : QObject(parent)
-    , m_currentTheme(QStringLiteral("dark"))
+    , m_currentTheme(QStringLiteral("light"))
 {
 }
 

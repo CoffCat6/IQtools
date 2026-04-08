@@ -6,6 +6,8 @@ import IQtools
 Item {
     id: root
 
+    default property alias cardContent: contentContainer.data
+
     property string title: ""
     property string description: ""
     property string meta: ""
@@ -17,6 +19,7 @@ Item {
 
     readonly property bool hovered: clickable && hitArea.containsMouse
     readonly property bool pressed: clickable && hitArea.pressed
+    readonly property bool hasCustomContent: contentContainer.children.length > 0
     readonly property color baseColor: {
         if (variant === "highlight") {
             return themeController.palette.bgCardHighlight
@@ -33,7 +36,7 @@ Item {
     }
 
     implicitWidth: 320
-    implicitHeight: 186
+    implicitHeight: Math.max(186, contentColumn.implicitHeight + themeController.palette.spacingLg * 2)
     opacity: revealOnLoad ? 0 : 1
 
     signal clicked()
@@ -142,6 +145,8 @@ Item {
         }
 
         ColumnLayout {
+            id: contentColumn
+
             anchors.fill: parent
             anchors.margins: themeController.palette.spacingLg
             spacing: 10
@@ -180,14 +185,26 @@ Item {
             }
 
             Label {
+                id: descriptionLabel
+
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.fillHeight: visible && !root.hasCustomContent
                 text: root.description
                 color: themeController.palette.textSecondary
                 wrapMode: Text.Wrap
                 lineHeight: 1.18
                 font.pixelSize: 14
                 font.family: "Segoe UI"
+                visible: root.description.length > 0
+            }
+
+            Item {
+                id: contentContainer
+
+                Layout.fillWidth: true
+                Layout.fillHeight: root.hasCustomContent
+                implicitHeight: root.hasCustomContent ? childrenRect.height : 0
+                visible: root.hasCustomContent
             }
 
             RowLayout {

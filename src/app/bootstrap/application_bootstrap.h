@@ -5,6 +5,9 @@
 namespace iqtools::core {
 class AppContext;
 class LogService;
+class SettingsManager;
+class I18nManager;
+class UpdateChecker;
 }
 
 class QQmlApplicationEngine;
@@ -15,6 +18,9 @@ class ThemeController;
 class NavigationController;
 class LoggingSettingsController;
 class LogConsoleController;
+class SettingsController;
+class WindowController;
+class UpdateController;
 class AppFacade;
 }
 
@@ -43,6 +49,12 @@ private:
     std::unique_ptr<iqtools::app::bridge::NavigationController> m_navigationController;
     std::unique_ptr<iqtools::app::bridge::LoggingSettingsController> m_loggingSettingsController;
     std::unique_ptr<iqtools::app::bridge::LogConsoleController> m_logConsoleController;
+    std::unique_ptr<iqtools::app::bridge::SettingsController> m_settingsController;
+    std::unique_ptr<iqtools::app::bridge::WindowController> m_windowController;
+    std::unique_ptr<iqtools::app::bridge::UpdateController> m_updateController;
+    std::unique_ptr<iqtools::core::SettingsManager> m_settingsManager;
+    std::unique_ptr<iqtools::core::I18nManager> m_i18nManager;
+    std::unique_ptr<iqtools::core::UpdateChecker> m_updateChecker;
     std::unique_ptr<iqtools::app::bridge::AppFacade> m_appFacade;
 };
 
