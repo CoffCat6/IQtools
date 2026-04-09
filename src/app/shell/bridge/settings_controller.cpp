@@ -1,20 +1,71 @@
 #include "settings_controller.h"
 
+#include <algorithm>
+
 #include <QDesktopServices>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QUrl>
 
 #include "core/services/auto_start_manager.h"
 #include "core/services/log_service.h"
+#include "core/settings/shortcut_manager.h"
 #include "core/settings/settings_manager.h"
 #include "theme_controller.h"
 
 namespace iqtools::app::bridge {
 
+namespace {
+
+QKeySequence parseShortcutSequence(const QString& sequenceText)
+{
+    const QString trimmed = sequenceText.trimmed();
+    if (trimmed.isEmpty()) {
+        return QKeySequence();
+    }
+
+    QKeySequence key = QKeySequence::fromString(trimmed, QKeySequence::PortableText);
+    if (key.isEmpty()) {
+        key = QKeySequence::fromString(trimmed, QKeySequence::NativeText);
+    }
+    return key;
+}
+
+QString toDisplayShortcut(const QKeySequence& key)
+{
+    return key.toString(QKeySequence::NativeText);
+}
+
+QString translateShortcutText(const QString& source)
+{
+    const QByteArray utf8 = source.toUtf8();
+    return QCoreApplication::translate("ShortcutManager", utf8.constData());
+}
+
+QVariantMap toShortcutVariantMap(const iqtools::core::ShortcutItem& item)
+{
+    const QString localizedCategory = translateShortcutText(item.category);
+    const QString localizedDescription = translateShortcutText(item.description);
+
+    return {
+        {QStringLiteral("id"), item.id},
+        {QStringLiteral("category"), localizedCategory},
+        {QStringLiteral("description"), localizedDescription},
+        {QStringLiteral("defaultKey"), toDisplayShortcut(item.defaultKey)},
+        {QStringLiteral("currentKey"), toDisplayShortcut(item.currentKey)},
+        {QStringLiteral("customized"), item.currentKey != item.defaultKey},
+        {QStringLiteral("hasBinding"), !item.currentKey.isEmpty()},
+    };
+}
+
+}  // namespace
+
 SettingsController::SettingsController(iqtools::core::SettingsManager* manager,
+                                       iqtools::core::ShortcutManager* shortcutManager,
                                        ThemeController* themeController,
                                        QObject* parent)
     : QObject(parent)
     , m_manager(manager)
+    , m_shortcutManager(shortcutManager)
     , m_themeController(themeController)
 {
     // When SettingsManager signals a change, refresh our QML properties.
@@ -35,6 +86,11 @@ SettingsController::SettingsController(iqtools::core::SettingsManager* manager,
 
     // Sync OS auto-start state with persisted setting
     iqtools::core::AutoStartManager::setEnabled(m_manager->autoStartEnabled());
+
+    if (m_shortcutManager != nullptr) {
+        connect(m_shortcutManager, &iqtools::core::ShortcutManager::shortcutChanged,
+                this, &SettingsController::shortcutsChanged);
+    }
 }
 
 // ─── Reads ───
@@ -95,6 +151,33 @@ QString SettingsController::statusMessage() const
     return m_statusMessage;
 }
 
+QVariantList SettingsController::shortcuts() const
+{
+    if (m_shortcutManager == nullptr) {
+        return {};
+    }
+
+    QVector<iqtools::core::ShortcutItem> shortcutItems = m_shortcutManager->allShortcuts();
+    std::sort(shortcutItems.begin(), shortcutItems.end(),
+              [](const iqtools::core::ShortcutItem& left,
+                 const iqtools::core::ShortcutItem& right) {
+                  if (left.category != right.category) {
+                      return left.category < right.category;
+                  }
+                  if (left.description != right.description) {
+                      return left.description < right.description;
+                  }
+                  return left.id < right.id;
+              });
+
+    QVariantList list;
+    list.reserve(shortcutItems.size());
+    for (const iqtools::core::ShortcutItem& item : shortcutItems) {
+        list.push_back(toShortcutVariantMap(item));
+    }
+    return list;
+}
+
 iqtools::core::SettingsManager* SettingsController::manager() const
 {
     return m_manager;
@@ -153,6 +236,7 @@ void SettingsController::setLanguage(const QString& lang)
 
     // Notify the application to reload translations
     emit languageRequested(lang);
+    emit shortcutsChanged();
 
     iqtools::core::LogService::info(QStringLiteral("settings"),
                                     QStringLiteral("Language changed to: %1").arg(lang));
@@ -194,6 +278,11 @@ void SettingsController::resetToDefaults()
         m_themeController->setTheme(QStringLiteral("dark"));
     }
 
+    if (m_shortcutManager != nullptr) {
+        m_shortcutManager->resetAllToDefault();
+        emit shortcutsChanged();
+    }
+
     setStatusAndClear(QStringLiteral("所有设置已恢复默认值"));
     emit settingsChanged();
 
@@ -204,6 +293,76 @@ void SettingsController::openSettingsFile()
 {
     const QUrl url = QUrl::fromLocalFile(m_manager->settingsFilePath());
     QDesktopServices::openUrl(url);
+}
+
+bool SettingsController::applyShortcut(const QString& id, const QString& sequenceText)
+{
+    if (m_shortcutManager == nullptr || id.trimmed().isEmpty()) {
+        return false;
+    }
+
+    const QString trimmed = sequenceText.trimmed();
+    const QKeySequence key = parseShortcutSequence(trimmed);
+    if (!trimmed.isEmpty() && key.isEmpty()) {
+        setStatusAndClear(tr("快捷键格式无效，请使用例如 Ctrl+Shift+K"), 5000);
+        return false;
+    }
+
+    if (!key.isEmpty()) {
+        const QString conflict = m_shortcutManager->checkConflict(key, id);
+        if (!conflict.isEmpty()) {
+            setStatusAndClear(tr("快捷键冲突：已被 %1 占用").arg(conflict), 5000);
+            return false;
+        }
+    }
+
+    const bool ok = m_shortcutManager->updateShortcut(id, key);
+    if (!ok) {
+        setStatusAndClear(tr("快捷键更新失败，请重试"), 5000);
+        return false;
+    }
+
+    emit shortcutsChanged();
+    setStatusAndClear(trimmed.isEmpty() ? tr("已清空快捷键绑定")
+                                        : tr("快捷键已更新"));
+    return true;
+}
+
+QString SettingsController::checkShortcutConflictText(const QString& sequenceText,
+                                                      const QString& ignoreId) const
+{
+    if (m_shortcutManager == nullptr) {
+        return QString();
+    }
+
+    const QKeySequence key = parseShortcutSequence(sequenceText);
+    if (key.isEmpty()) {
+        return QString();
+    }
+
+    return m_shortcutManager->checkConflict(key, ignoreId);
+}
+
+void SettingsController::resetShortcutToDefault(const QString& id)
+{
+    if (m_shortcutManager == nullptr || id.trimmed().isEmpty()) {
+        return;
+    }
+
+    m_shortcutManager->resetToDefault(id);
+    emit shortcutsChanged();
+    setStatusAndClear(tr("已恢复默认快捷键"));
+}
+
+void SettingsController::resetAllShortcutsToDefault()
+{
+    if (m_shortcutManager == nullptr) {
+        return;
+    }
+
+    m_shortcutManager->resetAllToDefault();
+    emit shortcutsChanged();
+    setStatusAndClear(tr("已恢复全部默认快捷键"));
 }
 
 void SettingsController::setStatusAndClear(const QString& message, int timeoutMs)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtCore/QObject>
+#include <QtCore/QMap>
 #include <QtCore/QString>
 
 #include <memory>
@@ -68,6 +69,10 @@ public:
   QString logDirectory() const;
   void setLogDirectory(const QString &directory);
 
+  // ─── Shortcut settings ───
+  QMap<QString, QString> shortcutMappings() const;
+  bool setShortcutMappings(const QMap<QString, QString>& shortcuts);
+
 signals:
   void settingsChanged();
   void defaultThemeChanged(const QString &theme);
@@ -93,6 +98,7 @@ private:
   bool m_logFileEnabled{true};
   QString m_logMinimumLevel;
   QString m_logDirectory;
+  QMap<QString, QString> m_shortcuts;
 };
 
 } // namespace iqtools::core

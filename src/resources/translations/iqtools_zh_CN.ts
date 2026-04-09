@@ -167,5 +167,211 @@
         <source>恢复所有默认设置</source>
         <translation>恢复所有默认设置</translation>
     </message>
+    <message>
+        <source>快捷键设置</source>
+        <translation>快捷键设置</translation>
+    </message>
+    <message>
+        <source>查看、搜索并自定义功能快捷键。</source>
+        <translation>查看、搜索并自定义功能快捷键。</translation>
+    </message>
+    <message>
+        <source>搜索功能 / 分类 / ID / 快捷键</source>
+        <translation>搜索功能 / 分类 / ID / 快捷键</translation>
+    </message>
+    <message>
+        <source>已显示 %1 / %2 项</source>
+        <translation>已显示 %1 / %2 项</translation>
+    </message>
+    <message>
+        <source>全部恢复默认</source>
+        <translation>全部恢复默认</translation>
+    </message>
+    <message>
+        <source>未绑定</source>
+        <translation>未绑定</translation>
+    </message>
+    <message>
+        <source>请选择左侧功能</source>
+        <translation>请选择左侧功能</translation>
+    </message>
+    <message>
+        <source>分类：%1</source>
+        <translation>分类：%1</translation>
+    </message>
+    <message>
+        <source>ID：%1</source>
+        <translation>ID：%1</translation>
+    </message>
+    <message>
+        <source>默认：%1</source>
+        <translation>默认：%1</translation>
+    </message>
+    <message>
+        <source>例如 Ctrl+Shift+K，留空可清空绑定</source>
+        <translation>例如 Ctrl+Shift+K，留空可清空绑定</translation>
+    </message>
+    <message>
+        <source>冲突：该组合已被 %1 占用</source>
+        <translation>冲突：该组合已被 %1 占用</translation>
+    </message>
+    <message>
+        <source>应用快捷键</source>
+        <translation>应用快捷键</translation>
+    </message>
+    <message>
+        <source>清空并保存</source>
+        <translation>清空并保存</translation>
+    </message>
+    <message>
+        <source>恢复默认</source>
+        <translation>恢复默认</translation>
+    </message>
+    <message>
+        <source>当前为自定义快捷键</source>
+        <translation>当前为自定义快捷键</translation>
+    </message>
+    <message>
+        <source>当前为默认快捷键</source>
+        <translation>当前为默认快捷键</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutManager</name>
+    <message>
+        <source>文件</source>
+        <translation>文件</translation>
+    </message>
+    <message>
+        <source>编辑</source>
+        <translation>编辑</translation>
+    </message>
+    <message>
+        <source>视图</source>
+        <translation>视图</translation>
+    </message>
+    <message>
+        <source>工具/执行</source>
+        <translation>工具/执行</translation>
+    </message>
+    <message>
+        <source>帮助/系统</source>
+        <translation>帮助/系统</translation>
+    </message>
+    <message>
+        <source>新建项目</source>
+        <translation>新建项目</translation>
+    </message>
+    <message>
+        <source>打开文件/项目</source>
+        <translation>打开文件/项目</translation>
+    </message>
+    <message>
+        <source>保存</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <source>另存为</source>
+        <translation>另存为</translation>
+    </message>
+    <message>
+        <source>退出程序</source>
+        <translation>退出程序</translation>
+    </message>
+    <message>
+        <source>撤销</source>
+        <translation>撤销</translation>
+    </message>
+    <message>
+        <source>重做</source>
+        <translation>重做</translation>
+    </message>
+    <message>
+        <source>复制</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>粘贴</source>
+        <translation>粘贴</translation>
+    </message>
+    <message>
+        <source>剪切</source>
+        <translation>剪切</translation>
+    </message>
+    <message>
+        <source>放大视图</source>
+        <translation>放大视图</translation>
+    </message>
+    <message>
+        <source>缩小视图</source>
+        <translation>缩小视图</translation>
+    </message>
+    <message>
+        <source>恢复默认视图</source>
+        <translation>恢复默认视图</translation>
+    </message>
+    <message>
+        <source>运行当前工具/脚本</source>
+        <translation>运行当前工具/脚本</translation>
+    </message>
+    <message>
+        <source>停止/终止运行</source>
+        <translation>停止/终止运行</translation>
+    </message>
+    <message>
+        <source>编译/构建</source>
+        <translation>编译/构建</translation>
+    </message>
+    <message>
+        <source>清空输出日志</source>
+        <translation>清空输出日志</translation>
+    </message>
+    <message>
+        <source>查看帮助文档</source>
+        <translation>查看帮助文档</translation>
+    </message>
+    <message>
+        <source>打开系统设置/偏好设置</source>
+        <translation>打开系统设置/偏好设置</translation>
+    </message>
+    <message>
+        <source>全局搜索/查找</source>
+        <translation>全局搜索/查找</translation>
+    </message>
+    <message>
+        <source>查找下一个</source>
+        <translation>查找下一个</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsController</name>
+    <message>
+        <source>快捷键格式无效，请使用例如 Ctrl+Shift+K</source>
+        <translation>快捷键格式无效，请使用例如 Ctrl+Shift+K</translation>
+    </message>
+    <message>
+        <source>快捷键冲突：已被 %1 占用</source>
+        <translation>快捷键冲突：已被 %1 占用</translation>
+    </message>
+    <message>
+        <source>快捷键更新失败，请重试</source>
+        <translation>快捷键更新失败，请重试</translation>
+    </message>
+    <message>
+        <source>已清空快捷键绑定</source>
+        <translation>已清空快捷键绑定</translation>
+    </message>
+    <message>
+        <source>快捷键已更新</source>
+        <translation>快捷键已更新</translation>
+    </message>
+    <message>
+        <source>已恢复默认快捷键</source>
+        <translation>已恢复默认快捷键</translation>
+    </message>
+    <message>
+        <source>已恢复全部默认快捷键</source>
+        <translation>已恢复全部默认快捷键</translation>
+    </message>
 </context>
 </TS>

@@ -41,6 +41,7 @@ set(IQTOOLS_SOURCES
     src/core/services/i18n_manager.cpp
     src/core/services/update_checker.cpp
     src/core/settings/settings_manager.cpp
+    src/core/settings/shortcut_manager.cpp
     src/core/plugin/plugin_manager.cpp
     src/infra/logging/log_manager.cpp
     src/infra/logging/logger.cpp
@@ -68,6 +69,7 @@ set(IQTOOLS_HEADERS
     src/core/services/i18n_manager.h
     src/core/services/update_checker.h
     src/core/settings/settings_manager.h
+    src/core/settings/shortcut_manager.h
     src/core/plugin/plugin_manager.h
     src/plugin-api/iplugin.h
     src/plugin-api/itool_plugin.h
@@ -100,6 +102,14 @@ qt_add_qml_module(IQtools
         src/app/shell/qml/pages/PluginPage.qml
         src/app/shell/qml/pages/LogPage.qml
         src/app/shell/qml/pages/SettingsPage.qml
+    
+    # NO_RESOURCE_TARGET_PATH
+    # NO_CACHEGEN
+    # RESOURCE_PREFIX src/app/shell/qml
+)
+
+target_compile_definitions(IQtools PRIVATE
+    $<$<CONFIG:Debug>:QT_QML_DEBUG>
 )
 
 target_include_directories(IQtools PRIVATE
@@ -127,4 +137,5 @@ target_link_libraries(IQtools PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Network
+    # $<$<CONFIG:Debug>:Qt6::QmlPrivate>
 )

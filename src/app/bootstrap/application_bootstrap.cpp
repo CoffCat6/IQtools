@@ -25,6 +25,7 @@
 #include "core/services/log_service.h"
 #include "core/services/theme_manager.h"
 #include "core/services/update_checker.h"
+#include "core/settings/shortcut_manager.h"
 #include "core/settings/settings_manager.h"
 #include "infra/logging/logger.h"
 
@@ -33,6 +34,9 @@ namespace iqtools::app {
 ApplicationBootstrap::ApplicationBootstrap() = default;
 
 ApplicationBootstrap::~ApplicationBootstrap() {
+  if (m_appContext != nullptr) {
+    m_appContext->pluginManager().setShortcutManager(nullptr);
+  }
   iqtools::infra::logging::Logger::shutdown();
 }
 
@@ -68,6 +72,16 @@ void ApplicationBootstrap::initCore() {
   m_settingsManager = std::make_unique<iqtools::core::SettingsManager>();
   m_settingsManager->load();
 
+  // Initialize shortcut manager and reserve built-in shortcut ids.
+  m_shortcutManager = std::make_unique<iqtools::core::ShortcutManager>(
+      m_settingsManager.get());
+  m_shortcutManager->loadConfig();
+  m_shortcutManager->registerDefaultAppShortcuts();
+
+  // Expose shortcut-aware plugin context.
+  m_appContext->pluginManager().setShortcutManager(m_shortcutManager.get());
+  m_appContext->pluginManager().initialize();
+
   // Initialize i18n manager with saved language preference
   m_i18nManager = std::make_unique<iqtools::core::I18nManager>();
   m_i18nManager->initialize(m_settingsManager->language());
@@ -99,7 +113,8 @@ void ApplicationBootstrap::initPresentation() {
       std::make_unique<iqtools::app::bridge::LogConsoleController>();
   m_settingsController =
       std::make_unique<iqtools::app::bridge::SettingsController>(
-          m_settingsManager.get(), m_themeController.get());
+        m_settingsManager.get(), m_shortcutManager.get(),
+        m_themeController.get());
   m_windowController = std::make_unique<iqtools::app::bridge::WindowController>(
       m_settingsManager.get());
   m_updateController = std::make_unique<iqtools::app::bridge::UpdateController>(

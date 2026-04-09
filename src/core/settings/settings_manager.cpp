@@ -22,6 +22,7 @@ constexpr auto kKeyLogConsole = "log_console_enabled";
 constexpr auto kKeyLogFile = "log_file_enabled";
 constexpr auto kKeyLogLevel = "log_minimum_level";
 constexpr auto kKeyLogDirectory = "log_directory";
+constexpr auto kKeyShortcutPrefix = "shortcut.";
 
 QString defaultSettingsPath() {
   const QString appDataDir =
@@ -188,6 +189,27 @@ void SettingsManager::setLogDirectory(const QString &directory) {
   emit loggingSettingsChanged();
 }
 
+QMap<QString, QString> SettingsManager::shortcutMappings() const {
+  return m_shortcuts;
+}
+
+bool SettingsManager::setShortcutMappings(
+    const QMap<QString, QString>& shortcuts) {
+  if (m_shortcuts == shortcuts) {
+    return true;
+  }
+
+  const QMap<QString, QString> previousShortcuts = m_shortcuts;
+  m_shortcuts = shortcuts;
+  const bool saved = save();
+  if (saved) {
+    emit settingsChanged();
+  } else {
+    m_shortcuts = previousShortcuts;
+  }
+  return saved;
+}
+
 // ─── Private ───
 
 void SettingsManager::loadDefaults() {
@@ -202,6 +224,7 @@ void SettingsManager::loadDefaults() {
   m_logFileEnabled = true;
   m_logMinimumLevel = QStringLiteral("Debug");
   m_logDirectory = QString();  // Will use default in Logger
+  m_shortcuts.clear();
 }
 
 void SettingsManager::syncFromStorage() {
@@ -230,20 +253,58 @@ void SettingsManager::syncFromStorage() {
           .toString();
   m_logDirectory =
       m_storage->value(QLatin1String(kKeyLogDirectory), QString()).toString();
+
+  m_shortcuts.clear();
+  const QString shortcutPrefix = QString::fromLatin1(kKeyShortcutPrefix);
+  const QMap<QString, QVariant> allValues = m_storage->allValues();
+  for (auto it = allValues.constBegin(); it != allValues.constEnd(); ++it) {
+    if (!it.key().startsWith(shortcutPrefix)) {
+      continue;
+    }
+
+    const QString id = it.key().mid(shortcutPrefix.size());
+    if (id.isEmpty()) {
+      continue;
+    }
+
+    const QString portableText = it.value().toString().trimmed();
+    if (!portableText.isEmpty()) {
+      m_shortcuts.insert(id, portableText);
+    }
+  }
 }
 
 void SettingsManager::syncToStorage() {
-  m_storage->setValue(QLatin1String(kKeyTheme), m_defaultTheme);
-  m_storage->setValue(QLatin1String(kKeyAutoStart), m_autoStart);
-  m_storage->setValue(QLatin1String(kKeyCheckUpdate), m_checkUpdate);
-  m_storage->setValue(QLatin1String(kKeyLanguage), m_language);
-  m_storage->setValue(QLatin1String(kKeyMinToTray), m_minimizeToTray);
-  m_storage->setValue(QLatin1String(kKeyConfirmExit), m_confirmOnExit);
-  // Logging
-  m_storage->setValue(QLatin1String(kKeyLogConsole), m_logConsoleEnabled);
-  m_storage->setValue(QLatin1String(kKeyLogFile), m_logFileEnabled);
-  m_storage->setValue(QLatin1String(kKeyLogLevel), m_logMinimumLevel);
-  m_storage->setValue(QLatin1String(kKeyLogDirectory), m_logDirectory);
+  QMap<QString, QVariant> values = m_storage->allValues();
+
+  values.insert(QLatin1String(kKeyTheme), m_defaultTheme);
+  values.insert(QLatin1String(kKeyAutoStart), m_autoStart);
+  values.insert(QLatin1String(kKeyCheckUpdate), m_checkUpdate);
+  values.insert(QLatin1String(kKeyLanguage), m_language);
+  values.insert(QLatin1String(kKeyMinToTray), m_minimizeToTray);
+  values.insert(QLatin1String(kKeyConfirmExit), m_confirmOnExit);
+  values.insert(QLatin1String(kKeyLogConsole), m_logConsoleEnabled);
+  values.insert(QLatin1String(kKeyLogFile), m_logFileEnabled);
+  values.insert(QLatin1String(kKeyLogLevel), m_logMinimumLevel);
+  values.insert(QLatin1String(kKeyLogDirectory), m_logDirectory);
+
+  const QString shortcutPrefix = QString::fromLatin1(kKeyShortcutPrefix);
+  for (auto it = values.begin(); it != values.end();) {
+    if (it.key().startsWith(shortcutPrefix)) {
+      it = values.erase(it);
+      continue;
+    }
+    ++it;
+  }
+
+  for (auto it = m_shortcuts.constBegin(); it != m_shortcuts.constEnd(); ++it) {
+    if (it.key().trimmed().isEmpty() || it.value().trimmed().isEmpty()) {
+      continue;
+    }
+    values.insert(shortcutPrefix + it.key(), it.value());
+  }
+
+  m_storage->setAllValues(values);
 }
 
 } // namespace iqtools::core

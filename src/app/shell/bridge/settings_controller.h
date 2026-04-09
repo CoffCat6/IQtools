@@ -4,9 +4,12 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
+#include <QtCore/QVariantList>
+#include <QtCore/QVariantMap>
 
 namespace iqtools::core {
 class SettingsManager;
+class ShortcutManager;
 }
 
 namespace iqtools::app::bridge {
@@ -42,8 +45,12 @@ class SettingsController : public QObject {
     Q_PROPERTY(QString settingsFilePath READ settingsFilePath CONSTANT)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
 
+    // ─── Shortcuts ───
+    Q_PROPERTY(QVariantList shortcuts READ shortcuts NOTIFY shortcutsChanged)
+
 public:
     explicit SettingsController(iqtools::core::SettingsManager* manager,
+                                iqtools::core::ShortcutManager* shortcutManager,
                                 ThemeController* themeController,
                                 QObject* parent = nullptr);
 
@@ -57,6 +64,7 @@ public:
     bool confirmOnExit() const;
     QString settingsFilePath() const;
     QString statusMessage() const;
+    QVariantList shortcuts() const;
 
     void setDefaultTheme(const QString& theme);
     void setAutoStart(bool enabled);
@@ -67,6 +75,11 @@ public:
 
     Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void openSettingsFile();
+    Q_INVOKABLE bool applyShortcut(const QString& id, const QString& sequenceText);
+    Q_INVOKABLE QString checkShortcutConflictText(const QString& sequenceText,
+                                                  const QString& ignoreId = QString()) const;
+    Q_INVOKABLE void resetShortcutToDefault(const QString& id);
+    Q_INVOKABLE void resetAllShortcutsToDefault();
 
     /// Expose the underlying manager for use by other components (e.g. AppWindow).
     iqtools::core::SettingsManager* manager() const;
@@ -74,6 +87,7 @@ public:
 signals:
     void settingsChanged();
     void statusMessageChanged();
+    void shortcutsChanged();
 
     /// Emitted when the language setting is changed so the app can reload translations.
     void languageRequested(const QString& languageCode);
@@ -90,6 +104,7 @@ private:
 
 private:
     iqtools::core::SettingsManager* m_manager {nullptr};
+    iqtools::core::ShortcutManager* m_shortcutManager {nullptr};
     ThemeController* m_themeController {nullptr};
     QString m_statusMessage;
     QTimer m_statusClearTimer;

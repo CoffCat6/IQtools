@@ -5,11 +5,100 @@ import IQtools
 
 Item {
     id: root
+    property string selectedShortcutId: ""
+    property string shortcutConflictId: ""
+    property string shortcutSearchText: ""
 
     function applyLoggingSettings() {
         const ok = loggingSettings.apply()
         if (ok) {
             appFacade.logInfo("settings.logging", "Logging settings applied from UI")
+        }
+    }
+
+    function selectedShortcutData() {
+        const entries = settingsCtrl.shortcuts
+        for (let i = 0; i < entries.length; ++i) {
+            if (entries[i].id === selectedShortcutId) {
+                return entries[i]
+            }
+        }
+        return null
+    }
+
+    function selectShortcut(entry) {
+        if (!entry) {
+            return
+        }
+        selectedShortcutId = entry.id
+        if (typeof shortcutEditor !== "undefined") {
+            shortcutEditor.text = entry.currentKey
+        }
+        updateShortcutConflict()
+    }
+
+    function shortcutMatchesFilter(entry) {
+        const keyword = shortcutSearchText.trim().toLowerCase()
+        if (keyword.length === 0) {
+            return true
+        }
+
+        const composite = (entry.category + " " + entry.description + " " + entry.id + " "
+                          + entry.currentKey + " " + entry.defaultKey).toLowerCase()
+        return composite.indexOf(keyword) >= 0
+    }
+
+    function filteredShortcutCount() {
+        const entries = settingsCtrl.shortcuts
+        let count = 0
+        for (let i = 0; i < entries.length; ++i) {
+            if (shortcutMatchesFilter(entries[i])) {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    function updateShortcutConflict() {
+        if (selectedShortcutId.length === 0 || typeof shortcutEditor === "undefined") {
+            shortcutConflictId = ""
+            return
+        }
+        shortcutConflictId = settingsCtrl.checkShortcutConflictText(shortcutEditor.text, selectedShortcutId)
+    }
+
+    function refreshShortcutSelection() {
+        const entries = settingsCtrl.shortcuts
+        if (entries.length === 0) {
+            selectedShortcutId = ""
+            shortcutConflictId = ""
+            if (typeof shortcutEditor !== "undefined") {
+                shortcutEditor.text = ""
+            }
+            return
+        }
+
+        const selected = selectedShortcutData()
+        if (selected) {
+            if (typeof shortcutEditor !== "undefined") {
+                shortcutEditor.text = selected.currentKey
+            }
+            updateShortcutConflict()
+            return
+        }
+
+        selectShortcut(entries[0])
+    }
+
+    Component.onCompleted: {
+        refreshShortcutSelection()
+    }
+
+    Connections {
+        target: settingsCtrl
+
+        function onShortcutsChanged() {
+            root.refreshShortcutSelection()
         }
     }
 
@@ -278,7 +367,261 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 4. 关于与更新 (About & Updates)
+            // 4. 快捷键设置 (Shortcuts)
+            // ═══════════════════════════════════════════
+            BentoCard {
+                Layout.fillWidth: true
+                title: qsTr("快捷键设置")
+                description: qsTr("查看、搜索并自定义功能快捷键。")
+                meta: "Shortcut"
+                variant: "quiet"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: themeController.palette.spacingMd
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: themeController.palette.spacingMd
+
+                        TextField {
+                            id: shortcutSearchField
+                            Layout.fillWidth: true
+                            placeholderText: qsTr("搜索功能 / 分类 / ID / 快捷键")
+                            onTextChanged: root.shortcutSearchText = text
+                        }
+
+                        Label {
+                            text: qsTr("已显示 %1 / %2 项").arg(root.filteredShortcutCount()).arg(settingsCtrl.shortcuts.length)
+                            color: themeController.palette.textMuted
+                            font.pixelSize: 12
+                        }
+
+                        Button {
+                            text: qsTr("全部恢复默认")
+                            onClicked: {
+                                settingsCtrl.resetAllShortcutsToDefault()
+                                root.refreshShortcutSelection()
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: themeController.palette.spacingMd
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 560
+                            Layout.preferredHeight: 380
+                            radius: themeController.palette.radiusCard
+                            color: themeController.palette.bgCardHighlight
+                            border.width: 1
+                            border.color: themeController.palette.borderDefault
+
+                            ListView {
+                                id: shortcutListView
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                clip: true
+                                spacing: 6
+                                model: settingsCtrl.shortcuts
+
+                                delegate: Rectangle {
+                                    property var entry: modelData
+                                    property bool matched: root.shortcutMatchesFilter(entry)
+
+                                    width: ListView.view.width
+                                    visible: matched
+                                    implicitHeight: matched ? 68 : 0
+                                    radius: 10
+                                    border.width: 1
+                                    border.color: root.selectedShortcutId === entry.id
+                                                  ? themeController.palette.accentPrimary
+                                                  : themeController.palette.borderDefault
+                                    color: root.selectedShortcutId === entry.id
+                                           ? Qt.rgba(0.16, 0.55, 0.92, 0.12)
+                                           : themeController.palette.bgCard
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 10
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+
+                                            Label {
+                                                text: entry.description
+                                                color: themeController.palette.textPrimary
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Label {
+                                                text: entry.category + "  |  " + entry.id
+                                                color: themeController.palette.textMuted
+                                                font.pixelSize: 12
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+
+                                        Label {
+                                            text: entry.hasBinding ? entry.currentKey : qsTr("未绑定")
+                                            color: entry.customized
+                                                   ? themeController.palette.accentPrimary
+                                                   : themeController.palette.textSecondary
+                                            font.pixelSize: 13
+                                            font.bold: entry.customized
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.selectShortcut(parent.entry)
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: shortcutPanel
+                            property var selectedEntry: root.selectedShortcutData()
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 420
+                            Layout.preferredHeight: 380
+                            radius: themeController.palette.radiusCard
+                            color: themeController.palette.bgCardHighlight
+                            border.width: 1
+                            border.color: themeController.palette.borderDefault
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: themeController.palette.spacingMd
+                                spacing: themeController.palette.spacingMd
+
+                                Label {
+                                    text: shortcutPanel.selectedEntry
+                                          ? shortcutPanel.selectedEntry.description
+                                          : qsTr("请选择左侧功能")
+                                    color: themeController.palette.textPrimary
+                                    font.pixelSize: 16
+                                    font.bold: true
+                                }
+
+                                Label {
+                                    visible: shortcutPanel.selectedEntry !== null
+                                    text: shortcutPanel.selectedEntry
+                                          ? qsTr("分类：%1").arg(shortcutPanel.selectedEntry.category)
+                                          : ""
+                                    color: themeController.palette.textMuted
+                                    font.pixelSize: 12
+                                }
+
+                                Label {
+                                    visible: shortcutPanel.selectedEntry !== null
+                                    text: shortcutPanel.selectedEntry
+                                          ? qsTr("ID：%1").arg(shortcutPanel.selectedEntry.id)
+                                          : ""
+                                    color: themeController.palette.textMuted
+                                    font.pixelSize: 12
+                                }
+
+                                Label {
+                                    visible: shortcutPanel.selectedEntry !== null
+                                    text: shortcutPanel.selectedEntry
+                                          ? qsTr("默认：%1").arg(shortcutPanel.selectedEntry.defaultKey)
+                                          : ""
+                                    color: themeController.palette.textSecondary
+                                    font.pixelSize: 12
+                                }
+
+                                TextField {
+                                    id: shortcutEditor
+                                    Layout.fillWidth: true
+                                    enabled: shortcutPanel.selectedEntry !== null
+                                    placeholderText: qsTr("例如 Ctrl+Shift+K，留空可清空绑定")
+                                    onTextEdited: root.updateShortcutConflict()
+                                }
+
+                                Label {
+                                    visible: root.shortcutConflictId.length > 0
+                                    text: qsTr("冲突：该组合已被 %1 占用").arg(root.shortcutConflictId)
+                                    color: "#ff8a8a"
+                                    font.pixelSize: 12
+                                    wrapMode: Text.Wrap
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: themeController.palette.spacingMd
+
+                                    ThemedButton {
+                                        text: qsTr("应用快捷键")
+                                        enabled: shortcutPanel.selectedEntry !== null
+                                                 && root.shortcutConflictId.length === 0
+                                        onClicked: {
+                                            if (settingsCtrl.applyShortcut(root.selectedShortcutId, shortcutEditor.text)) {
+                                                root.refreshShortcutSelection()
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        text: qsTr("清空并保存")
+                                        enabled: shortcutPanel.selectedEntry !== null
+                                        onClicked: {
+                                            shortcutEditor.text = ""
+                                            root.updateShortcutConflict()
+                                            if (settingsCtrl.applyShortcut(root.selectedShortcutId, "")) {
+                                                root.refreshShortcutSelection()
+                                            }
+                                        }
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: themeController.palette.spacingMd
+
+                                    Button {
+                                        text: qsTr("恢复默认")
+                                        enabled: shortcutPanel.selectedEntry !== null
+                                        onClicked: {
+                                            settingsCtrl.resetShortcutToDefault(root.selectedShortcutId)
+                                            root.refreshShortcutSelection()
+                                        }
+                                    }
+
+                                    Label {
+                                        visible: shortcutPanel.selectedEntry !== null
+                                        text: shortcutPanel.selectedEntry && shortcutPanel.selectedEntry.customized
+                                              ? qsTr("当前为自定义快捷键")
+                                              : qsTr("当前为默认快捷键")
+                                        color: shortcutPanel.selectedEntry && shortcutPanel.selectedEntry.customized
+                                               ? themeController.palette.accentPrimary
+                                               : themeController.palette.textMuted
+                                        font.pixelSize: 12
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+                                }
+
+                                Item { Layout.fillHeight: true }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════
+            // 5. 关于与更新 (About & Updates)
             // ═══════════════════════════════════════════
             BentoCard {
                 Layout.fillWidth: true
@@ -455,7 +798,7 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 5. 操作栏 (Actions)
+            // 6. 操作栏 (Actions)
             // ═══════════════════════════════════════════
             RowLayout {
                 Layout.fillWidth: true

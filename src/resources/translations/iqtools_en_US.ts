@@ -167,5 +167,211 @@
         <source>恢复所有默认设置</source>
         <translation>Reset All to Defaults</translation>
     </message>
+    <message>
+        <source>快捷键设置</source>
+        <translation>Keyboard Shortcuts</translation>
+    </message>
+    <message>
+        <source>查看、搜索并自定义功能快捷键。</source>
+        <translation>View, search and customize function shortcuts.</translation>
+    </message>
+    <message>
+        <source>搜索功能 / 分类 / ID / 快捷键</source>
+        <translation>Search by action / category / ID / shortcut</translation>
+    </message>
+    <message>
+        <source>已显示 %1 / %2 项</source>
+        <translation>Showing %1 / %2 items</translation>
+    </message>
+    <message>
+        <source>全部恢复默认</source>
+        <translation>Reset All Shortcuts</translation>
+    </message>
+    <message>
+        <source>未绑定</source>
+        <translation>Unbound</translation>
+    </message>
+    <message>
+        <source>请选择左侧功能</source>
+        <translation>Select an action from the left list</translation>
+    </message>
+    <message>
+        <source>分类：%1</source>
+        <translation>Category: %1</translation>
+    </message>
+    <message>
+        <source>ID：%1</source>
+        <translation>ID: %1</translation>
+    </message>
+    <message>
+        <source>默认：%1</source>
+        <translation>Default: %1</translation>
+    </message>
+    <message>
+        <source>例如 Ctrl+Shift+K，留空可清空绑定</source>
+        <translation>e.g. Ctrl+Shift+K, leave empty to clear binding</translation>
+    </message>
+    <message>
+        <source>冲突：该组合已被 %1 占用</source>
+        <translation>Conflict: this shortcut is already used by %1</translation>
+    </message>
+    <message>
+        <source>应用快捷键</source>
+        <translation>Apply Shortcut</translation>
+    </message>
+    <message>
+        <source>清空并保存</source>
+        <translation>Clear and Save</translation>
+    </message>
+    <message>
+        <source>恢复默认</source>
+        <translation>Reset to Default</translation>
+    </message>
+    <message>
+        <source>当前为自定义快捷键</source>
+        <translation>Currently using custom shortcut</translation>
+    </message>
+    <message>
+        <source>当前为默认快捷键</source>
+        <translation>Currently using default shortcut</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutManager</name>
+    <message>
+        <source>文件</source>
+        <translation>File</translation>
+    </message>
+    <message>
+        <source>编辑</source>
+        <translation>Edit</translation>
+    </message>
+    <message>
+        <source>视图</source>
+        <translation>View</translation>
+    </message>
+    <message>
+        <source>工具/执行</source>
+        <translation>Tools/Run</translation>
+    </message>
+    <message>
+        <source>帮助/系统</source>
+        <translation>Help/System</translation>
+    </message>
+    <message>
+        <source>新建项目</source>
+        <translation>New Project</translation>
+    </message>
+    <message>
+        <source>打开文件/项目</source>
+        <translation>Open File/Project</translation>
+    </message>
+    <message>
+        <source>保存</source>
+        <translation>Save</translation>
+    </message>
+    <message>
+        <source>另存为</source>
+        <translation>Save As</translation>
+    </message>
+    <message>
+        <source>退出程序</source>
+        <translation>Quit Application</translation>
+    </message>
+    <message>
+        <source>撤销</source>
+        <translation>Undo</translation>
+    </message>
+    <message>
+        <source>重做</source>
+        <translation>Redo</translation>
+    </message>
+    <message>
+        <source>复制</source>
+        <translation>Copy</translation>
+    </message>
+    <message>
+        <source>粘贴</source>
+        <translation>Paste</translation>
+    </message>
+    <message>
+        <source>剪切</source>
+        <translation>Cut</translation>
+    </message>
+    <message>
+        <source>放大视图</source>
+        <translation>Zoom In</translation>
+    </message>
+    <message>
+        <source>缩小视图</source>
+        <translation>Zoom Out</translation>
+    </message>
+    <message>
+        <source>恢复默认视图</source>
+        <translation>Reset View</translation>
+    </message>
+    <message>
+        <source>运行当前工具/脚本</source>
+        <translation>Run Current Tool/Script</translation>
+    </message>
+    <message>
+        <source>停止/终止运行</source>
+        <translation>Stop Execution</translation>
+    </message>
+    <message>
+        <source>编译/构建</source>
+        <translation>Build</translation>
+    </message>
+    <message>
+        <source>清空输出日志</source>
+        <translation>Clear Output Log</translation>
+    </message>
+    <message>
+        <source>查看帮助文档</source>
+        <translation>Open Help Documentation</translation>
+    </message>
+    <message>
+        <source>打开系统设置/偏好设置</source>
+        <translation>Open Preferences</translation>
+    </message>
+    <message>
+        <source>全局搜索/查找</source>
+        <translation>Global Search</translation>
+    </message>
+    <message>
+        <source>查找下一个</source>
+        <translation>Find Next</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsController</name>
+    <message>
+        <source>快捷键格式无效，请使用例如 Ctrl+Shift+K</source>
+        <translation>Invalid shortcut format. Use e.g. Ctrl+Shift+K</translation>
+    </message>
+    <message>
+        <source>快捷键冲突：已被 %1 占用</source>
+        <translation>Shortcut conflict: already used by %1</translation>
+    </message>
+    <message>
+        <source>快捷键更新失败，请重试</source>
+        <translation>Failed to update shortcut. Please try again</translation>
+    </message>
+    <message>
+        <source>已清空快捷键绑定</source>
+        <translation>Shortcut binding cleared</translation>
+    </message>
+    <message>
+        <source>快捷键已更新</source>
+        <translation>Shortcut updated</translation>
+    </message>
+    <message>
+        <source>已恢复默认快捷键</source>
+        <translation>Default shortcut restored</translation>
+    </message>
+    <message>
+        <source>已恢复全部默认快捷键</source>
+        <translation>All default shortcuts restored</translation>
+    </message>
 </context>
 </TS>
