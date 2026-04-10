@@ -7,12 +7,16 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
+#include <QtCore/QtMath>
 #include <QtGui/QClipboard>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QImage>
+#include <QtGui/QImageWriter>
 #include <QtGui/QPainter>
 #include <QtGui/QPixmap>
 #include <QtGui/QScreen>
+
+#include "core/services/log_service.h"
 
 #if defined(Q_OS_MACOS)
 #include <ApplicationServices/ApplicationServices.h>
@@ -20,13 +24,54 @@
 
 namespace iqtools::core {
 
-ScreenCaptureResult ScreenCaptureService::captureAndSave(
-    const QString& outputDirectory,
-    const QString& format,
-    bool copyToClipboard,
-    int scalePercent,
-    bool enableAnnotation,
-    AnnotationOptions* annotationOptions) const
+namespace {
+
+constexpr auto kCaptureLogCategory = "tool.capture";
+
+bool areScalesClose(qreal lhs, qreal rhs)
+{
+    return qAbs(lhs - rhs) < 0.01;
+}
+
+QString formatScale(qreal value)
+{
+    return QString::number(value, 'f', 2);
+}
+
+QString captureStrategyText(bool mixedScale)
+{
+    return mixedScale
+               ? QStringLiteral("mixed_dpi_uniform_density")
+               : QStringLiteral("uniform_density");
+}
+
+QImage normalizedPixelImage(const QImage& source)
+{
+    if (source.isNull()) {
+        return {};
+    }
+
+    QImage normalized = source;
+    normalized.setDevicePixelRatio(1.0);
+    return normalized;
+}
+
+int dotsPerMeterFromDpi(int dpi)
+{
+    return qRound(static_cast<qreal>(dpi) / 0.0254);
+}
+
+QRect pixelRectFromLogicalRect(const QRect& logicalRect, qreal scaleX, qreal scaleY)
+{
+    return QRect(qRound(logicalRect.x() * scaleX),
+                 qRound(logicalRect.y() * scaleY),
+                 qMax(1, qRound(logicalRect.width() * scaleX)),
+                 qMax(1, qRound(logicalRect.height() * scaleY)));
+}
+
+}  // namespace
+
+ScreenCaptureResult ScreenCaptureService::captureAndSave(const CaptureSaveOptions& options) const
 {
 #if defined(Q_OS_MACOS)
     if (!hasMacScreenCapturePermission()) {
@@ -40,7 +85,7 @@ ScreenCaptureResult ScreenCaptureService::captureAndSave(
 #endif
 
     const DesktopSnapshot snapshot = captureVirtualDesktop();
-    if (snapshot.image.isNull()) {
+    if (snapshot.exportImage.isNull()) {
         return {
             false,
             QString(),
@@ -49,25 +94,24 @@ ScreenCaptureResult ScreenCaptureService::captureAndSave(
         };
     }
 
-    QImage imageForSave = snapshot.image;
-    if (enableAnnotation) {
+    QImage imageForSave = snapshot.exportImage;
+    if (options.enableAnnotation) {
         AnnotationDialog::Options dialogOptions;
-        if (annotationOptions != nullptr) {
-            dialogOptions.lineWidth = annotationOptions->lineWidth;
-            dialogOptions.textPixelSize = annotationOptions->textPixelSize;
-            dialogOptions.mosaicBlockSize = annotationOptions->mosaicBlockSize;
-            dialogOptions.colorIndex = annotationOptions->colorIndex;
-            dialogOptions.shortcutRectangle = annotationOptions->shortcutRectangle;
-            dialogOptions.shortcutArrow = annotationOptions->shortcutArrow;
-            dialogOptions.shortcutMosaic = annotationOptions->shortcutMosaic;
-            dialogOptions.shortcutText = annotationOptions->shortcutText;
-            dialogOptions.shortcutUndo = annotationOptions->shortcutUndo;
-            dialogOptions.shortcutRedo = annotationOptions->shortcutRedo;
-            dialogOptions.shortcutColorCycle = annotationOptions->shortcutColorCycle;
+        if (options.annotationOptions != nullptr) {
+            dialogOptions.lineWidth = options.annotationOptions->lineWidth;
+            dialogOptions.textPixelSize = options.annotationOptions->textPixelSize;
+            dialogOptions.mosaicBlockSize = options.annotationOptions->mosaicBlockSize;
+            dialogOptions.colorIndex = options.annotationOptions->colorIndex;
+            dialogOptions.shortcutRectangle = options.annotationOptions->shortcutRectangle;
+            dialogOptions.shortcutArrow = options.annotationOptions->shortcutArrow;
+            dialogOptions.shortcutMosaic = options.annotationOptions->shortcutMosaic;
+            dialogOptions.shortcutText = options.annotationOptions->shortcutText;
+            dialogOptions.shortcutUndo = options.annotationOptions->shortcutUndo;
+            dialogOptions.shortcutRedo = options.annotationOptions->shortcutRedo;
+            dialogOptions.shortcutColorCycle = options.annotationOptions->shortcutColorCycle;
         }
 
         AnnotationDialog dialog(imageForSave, dialogOptions, nullptr);
-        dialog.show();
         if (dialog.exec() != QDialog::Accepted) {
             return {
                 false,
@@ -78,37 +122,26 @@ ScreenCaptureResult ScreenCaptureService::captureAndSave(
         }
         imageForSave = dialog.annotatedImage();
 
-        if (annotationOptions != nullptr) {
+        if (options.annotationOptions != nullptr) {
             const AnnotationDialog::Options acceptedOptions = dialog.options();
-            annotationOptions->lineWidth = acceptedOptions.lineWidth;
-            annotationOptions->textPixelSize = acceptedOptions.textPixelSize;
-            annotationOptions->mosaicBlockSize = acceptedOptions.mosaicBlockSize;
-            annotationOptions->colorIndex = acceptedOptions.colorIndex;
-            annotationOptions->shortcutRectangle = acceptedOptions.shortcutRectangle;
-            annotationOptions->shortcutArrow = acceptedOptions.shortcutArrow;
-            annotationOptions->shortcutMosaic = acceptedOptions.shortcutMosaic;
-            annotationOptions->shortcutText = acceptedOptions.shortcutText;
-            annotationOptions->shortcutUndo = acceptedOptions.shortcutUndo;
-            annotationOptions->shortcutRedo = acceptedOptions.shortcutRedo;
-            annotationOptions->shortcutColorCycle = acceptedOptions.shortcutColorCycle;
+            options.annotationOptions->lineWidth = acceptedOptions.lineWidth;
+            options.annotationOptions->textPixelSize = acceptedOptions.textPixelSize;
+            options.annotationOptions->mosaicBlockSize = acceptedOptions.mosaicBlockSize;
+            options.annotationOptions->colorIndex = acceptedOptions.colorIndex;
+            options.annotationOptions->shortcutRectangle = acceptedOptions.shortcutRectangle;
+            options.annotationOptions->shortcutArrow = acceptedOptions.shortcutArrow;
+            options.annotationOptions->shortcutMosaic = acceptedOptions.shortcutMosaic;
+            options.annotationOptions->shortcutText = acceptedOptions.shortcutText;
+            options.annotationOptions->shortcutUndo = acceptedOptions.shortcutUndo;
+            options.annotationOptions->shortcutRedo = acceptedOptions.shortcutRedo;
+            options.annotationOptions->shortcutColorCycle = acceptedOptions.shortcutColorCycle;
         }
     }
 
-    return saveImage(imageForSave,
-                     outputDirectory,
-                     format,
-                     copyToClipboard,
-                     scalePercent,
-                     defaultOutputDirectory());
+    return saveImage(imageForSave, options, defaultOutputDirectory());
 }
 
-ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
-    const QString& outputDirectory,
-    const QString& format,
-    bool copyToClipboard,
-    int scalePercent,
-    bool enableAnnotation,
-    AnnotationOptions* annotationOptions) const
+ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(const CaptureSaveOptions& options) const
 {
 #if defined(Q_OS_MACOS)
     if (!hasMacScreenCapturePermission()) {
@@ -122,7 +155,7 @@ ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
 #endif
 
     const DesktopSnapshot snapshot = captureVirtualDesktop();
-    if (snapshot.image.isNull()) {
+    if (snapshot.previewImage.isNull() || snapshot.exportImage.isNull()) {
         return {
             false,
             QString(),
@@ -131,11 +164,9 @@ ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
         };
     }
 
-    RegionSelectionDialog selector(QPixmap::fromImage(snapshot.image),
-                                   snapshot.geometry,
+    RegionSelectionDialog selector(QPixmap::fromImage(snapshot.previewImage),
+                                   snapshot.logicalGeometry,
                                    nullptr);
-    selector.show();
-
     if (selector.exec() != QDialog::Accepted || !selector.hasSelection()) {
         return {
             false,
@@ -145,8 +176,10 @@ ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
         };
     }
 
-    const QRect region = selector.selectedRegion().intersected(snapshot.image.rect());
-    if (!region.isValid() || region.isEmpty()) {
+    const QRect previewBounds(QPoint(0, 0), snapshot.previewImage.size());
+    const QRect selectedLocalRegion =
+        selector.selectedRegion().intersected(previewBounds);
+    if (!selectedLocalRegion.isValid() || selectedLocalRegion.isEmpty()) {
         return {
             false,
             QString(),
@@ -155,25 +188,40 @@ ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
         };
     }
 
-    QImage imageForSave = snapshot.image.copy(region);
-    if (enableAnnotation) {
+    const QRect logicalRegion =
+        selectedLocalRegion.translated(snapshot.logicalGeometry.topLeft());
+
+    QImage imageForSave = cropSingleScreenRegion(snapshot, logicalRegion);
+    if (imageForSave.isNull()) {
+        imageForSave = cropExportRegion(snapshot, logicalRegion);
+    }
+
+    if (imageForSave.isNull()) {
+        return {
+            false,
+            QString(),
+            QStringLiteral("无效选区"),
+            {},
+        };
+    }
+
+    if (options.enableAnnotation) {
         AnnotationDialog::Options dialogOptions;
-        if (annotationOptions != nullptr) {
-            dialogOptions.lineWidth = annotationOptions->lineWidth;
-            dialogOptions.textPixelSize = annotationOptions->textPixelSize;
-            dialogOptions.mosaicBlockSize = annotationOptions->mosaicBlockSize;
-            dialogOptions.colorIndex = annotationOptions->colorIndex;
-            dialogOptions.shortcutRectangle = annotationOptions->shortcutRectangle;
-            dialogOptions.shortcutArrow = annotationOptions->shortcutArrow;
-            dialogOptions.shortcutMosaic = annotationOptions->shortcutMosaic;
-            dialogOptions.shortcutText = annotationOptions->shortcutText;
-            dialogOptions.shortcutUndo = annotationOptions->shortcutUndo;
-            dialogOptions.shortcutRedo = annotationOptions->shortcutRedo;
-            dialogOptions.shortcutColorCycle = annotationOptions->shortcutColorCycle;
+        if (options.annotationOptions != nullptr) {
+            dialogOptions.lineWidth = options.annotationOptions->lineWidth;
+            dialogOptions.textPixelSize = options.annotationOptions->textPixelSize;
+            dialogOptions.mosaicBlockSize = options.annotationOptions->mosaicBlockSize;
+            dialogOptions.colorIndex = options.annotationOptions->colorIndex;
+            dialogOptions.shortcutRectangle = options.annotationOptions->shortcutRectangle;
+            dialogOptions.shortcutArrow = options.annotationOptions->shortcutArrow;
+            dialogOptions.shortcutMosaic = options.annotationOptions->shortcutMosaic;
+            dialogOptions.shortcutText = options.annotationOptions->shortcutText;
+            dialogOptions.shortcutUndo = options.annotationOptions->shortcutUndo;
+            dialogOptions.shortcutRedo = options.annotationOptions->shortcutRedo;
+            dialogOptions.shortcutColorCycle = options.annotationOptions->shortcutColorCycle;
         }
 
         AnnotationDialog dialog(imageForSave, dialogOptions, nullptr);
-        dialog.show();
         if (dialog.exec() != QDialog::Accepted) {
             return {
                 false,
@@ -184,28 +232,23 @@ ScreenCaptureResult ScreenCaptureService::captureRegionAndSave(
         }
         imageForSave = dialog.annotatedImage();
 
-        if (annotationOptions != nullptr) {
+        if (options.annotationOptions != nullptr) {
             const AnnotationDialog::Options acceptedOptions = dialog.options();
-            annotationOptions->lineWidth = acceptedOptions.lineWidth;
-            annotationOptions->textPixelSize = acceptedOptions.textPixelSize;
-            annotationOptions->mosaicBlockSize = acceptedOptions.mosaicBlockSize;
-            annotationOptions->colorIndex = acceptedOptions.colorIndex;
-            annotationOptions->shortcutRectangle = acceptedOptions.shortcutRectangle;
-            annotationOptions->shortcutArrow = acceptedOptions.shortcutArrow;
-            annotationOptions->shortcutMosaic = acceptedOptions.shortcutMosaic;
-            annotationOptions->shortcutText = acceptedOptions.shortcutText;
-            annotationOptions->shortcutUndo = acceptedOptions.shortcutUndo;
-            annotationOptions->shortcutRedo = acceptedOptions.shortcutRedo;
-            annotationOptions->shortcutColorCycle = acceptedOptions.shortcutColorCycle;
+            options.annotationOptions->lineWidth = acceptedOptions.lineWidth;
+            options.annotationOptions->textPixelSize = acceptedOptions.textPixelSize;
+            options.annotationOptions->mosaicBlockSize = acceptedOptions.mosaicBlockSize;
+            options.annotationOptions->colorIndex = acceptedOptions.colorIndex;
+            options.annotationOptions->shortcutRectangle = acceptedOptions.shortcutRectangle;
+            options.annotationOptions->shortcutArrow = acceptedOptions.shortcutArrow;
+            options.annotationOptions->shortcutMosaic = acceptedOptions.shortcutMosaic;
+            options.annotationOptions->shortcutText = acceptedOptions.shortcutText;
+            options.annotationOptions->shortcutUndo = acceptedOptions.shortcutUndo;
+            options.annotationOptions->shortcutRedo = acceptedOptions.shortcutRedo;
+            options.annotationOptions->shortcutColorCycle = acceptedOptions.shortcutColorCycle;
         }
     }
 
-    return saveImage(imageForSave,
-                     outputDirectory,
-                     format,
-                     copyToClipboard,
-                     scalePercent,
-                     defaultOutputDirectory());
+    return saveImage(imageForSave, options, defaultOutputDirectory());
 }
 
 QString ScreenCaptureService::defaultOutputDirectory() const
@@ -258,33 +301,221 @@ ScreenCaptureService::DesktopSnapshot ScreenCaptureService::captureVirtualDeskto
         return {};
     }
 
-    QImage stitchedImage(virtualRect.size(), QImage::Format_ARGB32_Premultiplied);
-    stitchedImage.fill(Qt::transparent);
+    QList<ScreenSlice> slices;
+    qreal maxScale = 1.0;
+    qreal referenceScale = -1.0;
+    bool mixedScale = false;
 
-    QPainter painter(&stitchedImage);
     for (QScreen* screen : screens) {
         if (screen == nullptr) {
             continue;
         }
 
-        const QPixmap snapshot = screen->grabWindow(0);
-        if (snapshot.isNull()) {
+        const QPixmap screenshot = screen->grabWindow(0);
+        if (screenshot.isNull()) {
+            LogService::warning(
+                QString::fromLatin1(kCaptureLogCategory),
+                QStringLiteral("Screen grab returned null: name=%1 geometry=%2,%3 %4x%5")
+                    .arg(screen->name(),
+                         QString::number(screen->geometry().x()),
+                         QString::number(screen->geometry().y()),
+                         QString::number(screen->geometry().width()),
+                         QString::number(screen->geometry().height())));
             continue;
         }
 
-        const QPoint targetTopLeft =
-            screen->geometry().topLeft() - virtualRect.topLeft();
-        painter.drawPixmap(targetTopLeft, snapshot);
+        const QImage sourceImage = normalizedPixelImage(screenshot.toImage());
+        if (sourceImage.isNull()) {
+            LogService::warning(
+                QString::fromLatin1(kCaptureLogCategory),
+                QStringLiteral("Screen image conversion failed: name=%1")
+                    .arg(screen->name()));
+            continue;
+        }
+
+        const QRect logicalGeometry = screen->geometry();
+        if (!logicalGeometry.isValid() || logicalGeometry.isEmpty()) {
+            LogService::warning(
+                QString::fromLatin1(kCaptureLogCategory),
+                QStringLiteral("Screen geometry invalid: name=%1")
+                    .arg(screen->name()));
+            continue;
+        }
+
+        const qreal scaleX =
+            static_cast<qreal>(sourceImage.width()) / logicalGeometry.width();
+        const qreal scaleY =
+            static_cast<qreal>(sourceImage.height()) / logicalGeometry.height();
+        const qreal effectiveScale = qMax(scaleX, scaleY);
+        if (referenceScale < 0.0) {
+            referenceScale = effectiveScale;
+        } else if (!areScalesClose(referenceScale, effectiveScale)) {
+            mixedScale = true;
+        }
+        maxScale = qMax(maxScale, effectiveScale);
+
+        ScreenSlice slice;
+        slice.name = screen->name().trimmed().isEmpty()
+                         ? QStringLiteral("unknown-screen")
+                         : screen->name().trimmed();
+        slice.logicalGeometry = logicalGeometry;
+        slice.sourceImage = sourceImage;
+        slice.pixelSize = sourceImage.size();
+        slice.screenDevicePixelRatio = screen->devicePixelRatio();
+        slice.imageDevicePixelRatio = screenshot.devicePixelRatio();
+        slice.scaleX = scaleX;
+        slice.scaleY = scaleY;
+        slices.push_back(slice);
+
+        LogService::info(
+            QString::fromLatin1(kCaptureLogCategory),
+            QStringLiteral("Screen slice captured: name=%1 logical=%2,%3 %4x%5 pixels=%6x%7 screenDpr=%8 imageDpr=%9 scaleX=%10 scaleY=%11")
+                .arg(slice.name,
+                     QString::number(logicalGeometry.x()),
+                     QString::number(logicalGeometry.y()),
+                     QString::number(logicalGeometry.width()),
+                     QString::number(logicalGeometry.height()),
+                     QString::number(slice.pixelSize.width()),
+                     QString::number(slice.pixelSize.height()),
+                     formatScale(slice.screenDevicePixelRatio),
+                     formatScale(slice.imageDevicePixelRatio),
+                     formatScale(slice.scaleX),
+                     formatScale(slice.scaleY)));
     }
 
-    return {stitchedImage, virtualRect};
+    if (slices.isEmpty()) {
+        return {};
+    }
+
+    const qreal exportScale = qMax(1.0, maxScale);
+    QImage previewImage(virtualRect.size(), QImage::Format_ARGB32_Premultiplied);
+    previewImage.fill(Qt::transparent);
+
+    const QSize exportSize(qMax(1, qRound(virtualRect.width() * exportScale)),
+                           qMax(1, qRound(virtualRect.height() * exportScale)));
+    QImage exportImage(exportSize, QImage::Format_ARGB32_Premultiplied);
+    exportImage.fill(Qt::transparent);
+
+    QPainter previewPainter(&previewImage);
+    previewPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    QPainter exportPainter(&exportImage);
+    exportPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    for (const ScreenSlice& slice : slices) {
+        const QRect previewTarget(slice.logicalGeometry.topLeft() - virtualRect.topLeft(),
+                                  slice.logicalGeometry.size());
+        previewPainter.drawImage(previewTarget, slice.sourceImage);
+
+        const QRect exportTarget = scaleLogicalRect(previewTarget, exportScale);
+        exportPainter.drawImage(exportTarget, slice.sourceImage);
+    }
+
+    LogService::info(
+        QString::fromLatin1(kCaptureLogCategory),
+        QStringLiteral("Desktop snapshot built: screens=%1 logical=%2,%3 %4x%5 preview=%6x%7 export=%8x%9 exportScale=%10 strategy=%11")
+            .arg(QString::number(slices.size()),
+                 QString::number(virtualRect.x()),
+                 QString::number(virtualRect.y()),
+                 QString::number(virtualRect.width()),
+                 QString::number(virtualRect.height()),
+                 QString::number(previewImage.width()),
+                 QString::number(previewImage.height()),
+                 QString::number(exportImage.width()),
+                 QString::number(exportImage.height()),
+                 formatScale(exportScale),
+                 captureStrategyText(mixedScale)));
+
+    return {
+        virtualRect,
+        previewImage,
+        exportImage,
+        slices,
+        exportScale,
+        mixedScale,
+    };
+}
+
+QImage ScreenCaptureService::cropSingleScreenRegion(const DesktopSnapshot& snapshot,
+                                                    const QRect& logicalRegion)
+{
+    if (!logicalRegion.isValid() || logicalRegion.isEmpty()) {
+        return {};
+    }
+
+    for (const ScreenSlice& slice : snapshot.screens) {
+        if (!slice.logicalGeometry.contains(logicalRegion)) {
+            continue;
+        }
+
+        const QRect relativeLogical =
+            logicalRegion.translated(-slice.logicalGeometry.topLeft());
+        const QRect pixelRect = pixelRectFromLogicalRect(relativeLogical,
+                                                         slice.scaleX,
+                                                         slice.scaleY)
+                                    .intersected(slice.sourceImage.rect());
+        if (!pixelRect.isValid() || pixelRect.isEmpty()) {
+            return {};
+        }
+
+        LogService::info(
+            QString::fromLatin1(kCaptureLogCategory),
+            QStringLiteral("Region crop resolved to single screen: name=%1 logical=%2,%3 %4x%5 pixels=%6,%7 %8x%9")
+                .arg(slice.name,
+                     QString::number(logicalRegion.x()),
+                     QString::number(logicalRegion.y()),
+                     QString::number(logicalRegion.width()),
+                     QString::number(logicalRegion.height()),
+                     QString::number(pixelRect.x()),
+                     QString::number(pixelRect.y()),
+                     QString::number(pixelRect.width()),
+                     QString::number(pixelRect.height())));
+        return normalizedPixelImage(slice.sourceImage.copy(pixelRect));
+    }
+
+    return {};
+}
+
+QImage ScreenCaptureService::cropExportRegion(const DesktopSnapshot& snapshot,
+                                              const QRect& logicalRegion)
+{
+    if (snapshot.exportImage.isNull() || !logicalRegion.isValid() || logicalRegion.isEmpty()) {
+        return {};
+    }
+
+    const QRect localLogicalRegion =
+        logicalRegion.translated(-snapshot.logicalGeometry.topLeft());
+    const QRect exportRect =
+        scaleLogicalRect(localLogicalRegion, snapshot.exportScale)
+            .intersected(snapshot.exportImage.rect());
+    if (!exportRect.isValid() || exportRect.isEmpty()) {
+        return {};
+    }
+
+    LogService::info(
+        QString::fromLatin1(kCaptureLogCategory),
+        QStringLiteral("Region crop fell back to export image: logical=%1,%2 %3x%4 export=%5,%6 %7x%8 strategy=%9")
+            .arg(QString::number(logicalRegion.x()),
+                 QString::number(logicalRegion.y()),
+                 QString::number(logicalRegion.width()),
+                 QString::number(logicalRegion.height()),
+                 QString::number(exportRect.x()),
+                 QString::number(exportRect.y()),
+                 QString::number(exportRect.width()),
+                 QString::number(exportRect.height()),
+                 captureStrategyText(snapshot.mixedScale)));
+    return normalizedPixelImage(snapshot.exportImage.copy(exportRect));
+}
+
+QRect ScreenCaptureService::scaleLogicalRect(const QRect& logicalRect, qreal scale)
+{
+    return QRect(qRound(logicalRect.x() * scale),
+                 qRound(logicalRect.y() * scale),
+                 qMax(1, qRound(logicalRect.width() * scale)),
+                 qMax(1, qRound(logicalRect.height() * scale)));
 }
 
 ScreenCaptureResult ScreenCaptureService::saveImage(const QImage& image,
-                                                    const QString& outputDirectory,
-                                                    const QString& format,
-                                                    bool copyToClipboard,
-                                                    int scalePercent,
+                                                    const CaptureSaveOptions& options,
                                                     const QString& defaultDirectory)
 {
     ScreenCaptureResult result;
@@ -294,7 +525,7 @@ ScreenCaptureResult ScreenCaptureService::saveImage(const QImage& image,
         return result;
     }
 
-    QString directoryPath = outputDirectory.trimmed();
+    QString directoryPath = options.outputDirectory.trimmed();
     if (directoryPath.isEmpty()) {
         directoryPath = defaultDirectory;
     }
@@ -305,22 +536,38 @@ ScreenCaptureResult ScreenCaptureService::saveImage(const QImage& image,
         return result;
     }
 
-    const QImage finalImage = scaleImage(image, scalePercent);
-    if (finalImage.isNull()) {
+    const QImage scaledImage = scaleImage(image, options.scalePercent);
+    if (scaledImage.isNull()) {
         result.errorMessage = QStringLiteral("截图缩放失败");
         return result;
     }
 
-    const QString targetFormat = normalizedFormat(format);
+    const QImage finalImage = imageWithDpiMetadata(scaledImage, options.dpi);
+    const QString targetFormat = normalizedFormat(options.format);
     const QString fileName = buildFileName(targetFormat);
     const QString filePath = directory.filePath(fileName);
-    const QByteArray formatUpper = targetFormat.toUpper().toUtf8();
-    if (!finalImage.save(filePath, formatUpper.constData())) {
-        result.errorMessage = QStringLiteral("截图保存失败");
+
+    QImage encodedImage = finalImage;
+    if (targetFormat == QStringLiteral("jpg") && encodedImage.hasAlphaChannel()) {
+        QImage flattened(encodedImage.size(), QImage::Format_RGB32);
+        flattened.fill(Qt::white);
+        QPainter painter(&flattened);
+        painter.drawImage(0, 0, encodedImage);
+        encodedImage = flattened;
+    }
+
+    QImageWriter writer(filePath, targetFormat.toUtf8());
+    if (targetFormat == QStringLiteral("jpg")) {
+        writer.setQuality(qBound(80, options.jpegQuality, 100));
+    }
+
+    if (!writer.write(encodedImage)) {
+        result.errorMessage =
+            QStringLiteral("截图保存失败: %1").arg(writer.errorString());
         return result;
     }
 
-    if (copyToClipboard) {
+    if (options.copyToClipboard) {
         QClipboard* clipboard = QGuiApplication::clipboard();
         if (clipboard != nullptr) {
             clipboard->setImage(finalImage);
@@ -350,6 +597,26 @@ QImage ScreenCaptureService::scaleImage(const QImage& source, int scalePercent)
     return source.scaled(targetSize,
                          Qt::IgnoreAspectRatio,
                          Qt::SmoothTransformation);
+}
+
+QImage ScreenCaptureService::imageWithDpiMetadata(const QImage& source, int dpi)
+{
+    if (source.isNull()) {
+        return {};
+    }
+
+    QImage image = source;
+    image.setDevicePixelRatio(1.0);
+    if (dpi <= 0) {
+        image.setDotsPerMeterX(0);
+        image.setDotsPerMeterY(0);
+        return image;
+    }
+
+    const int dotsPerMeter = dotsPerMeterFromDpi(dpi);
+    image.setDotsPerMeterX(dotsPerMeter);
+    image.setDotsPerMeterY(dotsPerMeter);
+    return image;
 }
 
 QString ScreenCaptureService::normalizedFormat(const QString& format)

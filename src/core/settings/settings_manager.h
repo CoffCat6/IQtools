@@ -86,6 +86,15 @@ public:
   int captureScalePercent() const;
   void setCaptureScalePercent(int percent);
 
+  QString captureOutputFormat() const;
+  void setCaptureOutputFormat(const QString& format);
+
+  int captureJpegQuality() const;
+  void setCaptureJpegQuality(int quality);
+
+  int captureDpi() const;
+  void setCaptureDpi(int dpi);
+
   bool captureAnnotationEnabled() const;
   void setCaptureAnnotationEnabled(bool enabled);
 
@@ -156,6 +165,9 @@ private:
   bool m_captureAutoCopyToClipboard{true};
   int m_captureDelaySeconds{3};
   int m_captureScalePercent{100};
+  QString m_captureOutputFormat;
+  int m_captureJpegQuality{92};
+  int m_captureDpi{0};
   bool m_captureAnnotationEnabled{false};
   bool m_capturePinAfterCapture{false};
   int m_captureAnnotationLineWidth{3};

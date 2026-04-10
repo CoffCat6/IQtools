@@ -4,6 +4,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
 
+#include "core/services/log_service.h"
 #include "infra/storage/settings_storage.h"
 
 namespace iqtools::core {
@@ -27,6 +28,9 @@ constexpr auto kKeyCaptureOutputDirectory = "capture_output_directory";
 constexpr auto kKeyCaptureAutoCopy = "capture_auto_copy";
 constexpr auto kKeyCaptureDelaySeconds = "capture_delay_seconds";
 constexpr auto kKeyCaptureScalePercent = "capture_scale_percent";
+constexpr auto kKeyCaptureOutputFormat = "capture_output_format";
+constexpr auto kKeyCaptureJpegQuality = "capture_jpeg_quality";
+constexpr auto kKeyCaptureDpi = "capture_dpi";
 constexpr auto kKeyCaptureAnnotationEnabled = "capture_annotation_enabled";
 constexpr auto kKeyCapturePinAfterCapture = "capture_pin_after_capture";
 constexpr auto kKeyCaptureAnnotationLineWidth = "capture_annotation_line_width";
@@ -48,6 +52,31 @@ QString defaultSettingsPath() {
     return QDir::homePath() + QStringLiteral("/.iqtools/setting.yaml");
   }
   return QDir(appDataDir).filePath(QStringLiteral("setting.yaml"));
+}
+
+QString normalizeCaptureOutputFormat(const QString& format) {
+  const QString normalized = format.trimmed().toLower();
+  if (normalized == QStringLiteral("jpg") ||
+      normalized == QStringLiteral("jpeg")) {
+    return QStringLiteral("jpg");
+  }
+  return QStringLiteral("png");
+}
+
+int normalizeCaptureJpegQuality(int quality) {
+  return qBound(80, quality, 100);
+}
+
+int normalizeCaptureDpi(int dpi) {
+  switch (dpi) {
+  case 0:
+  case 96:
+  case 144:
+  case 300:
+    return dpi;
+  default:
+    return 0;
+  }
 }
 
 } // namespace
@@ -73,7 +102,13 @@ void SettingsManager::load() {
 
 bool SettingsManager::save() {
   syncToStorage();
-  return m_storage->save();
+  const bool saved = m_storage->save();
+  if (!saved) {
+    LogService::warning(QStringLiteral("settings"),
+                        QStringLiteral("Settings save failed: %1")
+                            .arg(m_storage->filePath()));
+  }
+  return saved;
 }
 
 QString SettingsManager::settingsFilePath() const {
@@ -282,6 +317,51 @@ void SettingsManager::setCaptureScalePercent(int percent) {
   }
 
   m_captureScalePercent = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureOutputFormat() const {
+  return m_captureOutputFormat;
+}
+
+void SettingsManager::setCaptureOutputFormat(const QString& format) {
+  const QString normalized = normalizeCaptureOutputFormat(format);
+  if (m_captureOutputFormat == normalized) {
+    return;
+  }
+
+  m_captureOutputFormat = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureJpegQuality() const {
+  return m_captureJpegQuality;
+}
+
+void SettingsManager::setCaptureJpegQuality(int quality) {
+  const int normalized = normalizeCaptureJpegQuality(quality);
+  if (m_captureJpegQuality == normalized) {
+    return;
+  }
+
+  m_captureJpegQuality = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureDpi() const {
+  return m_captureDpi;
+}
+
+void SettingsManager::setCaptureDpi(int dpi) {
+  const int normalized = normalizeCaptureDpi(dpi);
+  if (m_captureDpi == normalized) {
+    return;
+  }
+
+  m_captureDpi = normalized;
   save();
   emit settingsChanged();
 }
@@ -498,6 +578,9 @@ void SettingsManager::loadDefaults() {
   m_captureAutoCopyToClipboard = true;
   m_captureDelaySeconds = 3;
   m_captureScalePercent = 100;
+  m_captureOutputFormat = QStringLiteral("png");
+  m_captureJpegQuality = 92;
+  m_captureDpi = 0;
   m_captureAnnotationEnabled = false;
   m_capturePinAfterCapture = false;
   m_captureAnnotationLineWidth = 3;
@@ -552,6 +635,16 @@ void SettingsManager::syncFromStorage() {
       qBound(50,
              m_storage->value(QLatin1String(kKeyCaptureScalePercent), 100).toInt(),
              200);
+  m_captureOutputFormat =
+      normalizeCaptureOutputFormat(
+          m_storage->value(QLatin1String(kKeyCaptureOutputFormat),
+                           QStringLiteral("png")).toString());
+  m_captureJpegQuality =
+      normalizeCaptureJpegQuality(
+          m_storage->value(QLatin1String(kKeyCaptureJpegQuality), 92).toInt());
+  m_captureDpi =
+      normalizeCaptureDpi(
+          m_storage->value(QLatin1String(kKeyCaptureDpi), 0).toInt());
     m_captureAnnotationEnabled =
       m_storage->value(QLatin1String(kKeyCaptureAnnotationEnabled), false).toBool();
     m_capturePinAfterCapture =
@@ -633,6 +726,9 @@ void SettingsManager::syncToStorage() {
                 m_captureAutoCopyToClipboard);
   values.insert(QLatin1String(kKeyCaptureDelaySeconds), m_captureDelaySeconds);
   values.insert(QLatin1String(kKeyCaptureScalePercent), m_captureScalePercent);
+  values.insert(QLatin1String(kKeyCaptureOutputFormat), m_captureOutputFormat);
+  values.insert(QLatin1String(kKeyCaptureJpegQuality), m_captureJpegQuality);
+  values.insert(QLatin1String(kKeyCaptureDpi), m_captureDpi);
   values.insert(QLatin1String(kKeyCaptureAnnotationEnabled),
                 m_captureAnnotationEnabled);
   values.insert(QLatin1String(kKeyCapturePinAfterCapture),

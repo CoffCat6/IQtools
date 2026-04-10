@@ -24,6 +24,8 @@ constexpr auto kDefaultShortcutText = "4";
 constexpr auto kDefaultShortcutUndo = "Ctrl+Z";
 constexpr auto kDefaultShortcutRedo = "Ctrl+Y";
 constexpr auto kDefaultShortcutColorCycle = "C";
+constexpr auto kDefaultOutputFormat = "png";
+constexpr int kDefaultJpegQuality = 92;
 constexpr auto kAnnotationShortcutKeyRectangle = "rectangle";
 constexpr auto kAnnotationShortcutKeyArrow = "arrow";
 constexpr auto kAnnotationShortcutKeyMosaic = "mosaic";
@@ -31,6 +33,29 @@ constexpr auto kAnnotationShortcutKeyText = "text";
 constexpr auto kAnnotationShortcutKeyUndo = "undo";
 constexpr auto kAnnotationShortcutKeyRedo = "redo";
 constexpr auto kAnnotationShortcutKeyColorCycle = "color_cycle";
+
+QString normalizeOutputFormat(const QString& format)
+{
+    const QString normalized = format.trimmed().toLower();
+    if (normalized == QStringLiteral("jpg") ||
+        normalized == QStringLiteral("jpeg")) {
+        return QStringLiteral("jpg");
+    }
+    return QStringLiteral("png");
+}
+
+int normalizeDpiValue(int dpi)
+{
+    switch (dpi) {
+    case 0:
+    case 96:
+    case 144:
+    case 300:
+        return dpi;
+    default:
+        return 0;
+    }
+}
 
 }  // namespace
 
@@ -125,6 +150,30 @@ int CaptureController::scalePercent() const
         return 100;
     }
     return m_settingsManager->captureScalePercent();
+}
+
+QString CaptureController::outputFormat() const
+{
+    if (m_settingsManager == nullptr) {
+        return QString::fromLatin1(kDefaultOutputFormat);
+    }
+    return normalizeOutputFormat(m_settingsManager->captureOutputFormat());
+}
+
+int CaptureController::jpegQuality() const
+{
+    if (m_settingsManager == nullptr) {
+        return kDefaultJpegQuality;
+    }
+    return m_settingsManager->captureJpegQuality();
+}
+
+int CaptureController::dpiValue() const
+{
+    if (m_settingsManager == nullptr) {
+        return 0;
+    }
+    return normalizeDpiValue(m_settingsManager->captureDpi());
 }
 
 bool CaptureController::annotationEnabled() const
@@ -346,6 +395,51 @@ void CaptureController::setScalePercent(int percent)
 
     m_settingsManager->setCaptureScalePercent(bounded);
     emit scalePercentChanged();
+}
+
+void CaptureController::setOutputFormat(const QString& format)
+{
+    if (m_settingsManager == nullptr) {
+        return;
+    }
+
+    const QString normalized = normalizeOutputFormat(format);
+    if (normalizeOutputFormat(m_settingsManager->captureOutputFormat()) == normalized) {
+        return;
+    }
+
+    m_settingsManager->setCaptureOutputFormat(normalized);
+    emit outputFormatChanged();
+}
+
+void CaptureController::setJpegQuality(int quality)
+{
+    if (m_settingsManager == nullptr) {
+        return;
+    }
+
+    const int bounded = qBound(80, quality, 100);
+    if (m_settingsManager->captureJpegQuality() == bounded) {
+        return;
+    }
+
+    m_settingsManager->setCaptureJpegQuality(bounded);
+    emit jpegQualityChanged();
+}
+
+void CaptureController::setDpiValue(int dpi)
+{
+    if (m_settingsManager == nullptr) {
+        return;
+    }
+
+    const int normalized = normalizeDpiValue(dpi);
+    if (normalizeDpiValue(m_settingsManager->captureDpi()) == normalized) {
+        return;
+    }
+
+    m_settingsManager->setCaptureDpi(normalized);
+    emit dpiValueChanged();
 }
 
 void CaptureController::setAnnotationEnabled(bool enabled)
@@ -915,6 +1009,21 @@ QString CaptureController::resolvedOutputDirectory() const
     return QDir::toNativeSeparators(customDirectory);
 }
 
+iqtools::core::CaptureSaveOptions CaptureController::captureSaveOptions(
+    iqtools::core::AnnotationOptions* annotationOptions) const
+{
+    iqtools::core::CaptureSaveOptions options;
+    options.outputDirectory = resolvedOutputDirectory();
+    options.format = outputFormat();
+    options.copyToClipboard = autoCopyToClipboard();
+    options.scalePercent = scalePercent();
+    options.jpegQuality = jpegQuality();
+    options.dpi = dpiValue();
+    options.enableAnnotation = annotationEnabled();
+    options.annotationOptions = annotationOptions;
+    return options;
+}
+
 iqtools::core::AnnotationOptions CaptureController::annotationOptions() const
 {
     iqtools::core::AnnotationOptions options;
@@ -1204,6 +1313,7 @@ void CaptureController::performCapture(CaptureMode mode)
     iqtools::core::ScreenCaptureResult result;
     iqtools::core::AnnotationOptions options = annotationOptions();
     iqtools::core::AnnotationOptions* optionsPtr = annotationEnabled() ? &options : nullptr;
+    const iqtools::core::CaptureSaveOptions saveOptions = captureSaveOptions(optionsPtr);
     iqtools::core::ICaptureService* service = captureService();
     if (service == nullptr) {
         setStatusMessage(tr("截图服务不可用"), 5000);
@@ -1211,20 +1321,25 @@ void CaptureController::performCapture(CaptureMode mode)
         return;
     }
 
+    const QString modeText =
+        (mode == CaptureMode::Region) ? QStringLiteral("region") : QStringLiteral("fullscreen");
+    iqtools::core::LogService::info(
+        QStringLiteral("tool.capture"),
+        QStringLiteral("Capture requested: mode=%1 format=%2 scale=%3 jpegQuality=%4 dpi=%5 copyToClipboard=%6 annotation=%7")
+            .arg(modeText,
+                 saveOptions.format,
+                 QString::number(saveOptions.scalePercent),
+                 QString::number(saveOptions.jpegQuality),
+                 QString::number(saveOptions.dpi),
+                 saveOptions.copyToClipboard ? QStringLiteral("true")
+                                             : QStringLiteral("false"),
+                 saveOptions.enableAnnotation ? QStringLiteral("true")
+                                              : QStringLiteral("false")));
+
     if (mode == CaptureMode::Region) {
-        result = service->captureRegionAndSave(resolvedOutputDirectory(),
-                                               QStringLiteral("png"),
-                                               autoCopyToClipboard(),
-                                               scalePercent(),
-                                               annotationEnabled(),
-                                               optionsPtr);
+        result = service->captureRegionAndSave(saveOptions);
     } else {
-        result = service->captureAndSave(resolvedOutputDirectory(),
-                                         QStringLiteral("png"),
-                                         autoCopyToClipboard(),
-                                         scalePercent(),
-                                         annotationEnabled(),
-                                         optionsPtr);
+        result = service->captureAndSave(saveOptions);
     }
 
     if (!result.success) {
@@ -1261,10 +1376,14 @@ void CaptureController::performCapture(CaptureMode mode)
 
     iqtools::core::LogService::info(
         QStringLiteral("tool.capture"),
-        QStringLiteral("Capture completed: %1 (%2x%3)")
+        QStringLiteral("Capture completed: %1 (%2x%3) format=%4 scale=%5 jpegQuality=%6 dpi=%7")
             .arg(m_lastCapturePath)
             .arg(result.imageSize.width())
-            .arg(result.imageSize.height()));
+            .arg(result.imageSize.height())
+            .arg(saveOptions.format)
+            .arg(saveOptions.scalePercent)
+            .arg(saveOptions.jpegQuality)
+            .arg(saveOptions.dpi));
 }
 
 void CaptureController::startCaptureCountdown(CaptureMode mode, int seconds)

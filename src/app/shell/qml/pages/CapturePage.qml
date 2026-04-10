@@ -6,6 +6,16 @@ import IQtools
 Item {
     id: root
     property int shortcutRevision: 0
+    property var outputFormatItems: [
+        { label: "PNG", value: "png" },
+        { label: "JPG", value: "jpg" }
+    ]
+    property var dpiItems: [
+        { label: qsTr("不写入"), value: 0 },
+        { label: "96", value: 96 },
+        { label: "144", value: 144 },
+        { label: "300", value: 300 }
+    ]
 
     property var annotationShortcutItems: [
         { actionKey: "rectangle", title: qsTr("矩形"), preferredWidth: 132 },
@@ -23,6 +33,24 @@ Item {
 
     function shortcutText(actionKey) {
         return captureController.annotationShortcutByKey(actionKey)
+    }
+
+    function outputFormatIndex() {
+        for (let i = 0; i < outputFormatItems.length; ++i) {
+            if (outputFormatItems[i].value === captureController.outputFormat) {
+                return i
+            }
+        }
+        return 0
+    }
+
+    function dpiIndex() {
+        for (let i = 0; i < dpiItems.length; ++i) {
+            if (dpiItems[i].value === captureController.dpiValue) {
+                return i
+            }
+        }
+        return 0
     }
 
     ScrollView {
@@ -153,7 +181,7 @@ Item {
             BentoCard {
                 Layout.fillWidth: true
                 title: qsTr("截图选项")
-                description: qsTr("控制延时、复制行为和输出目录。")
+                description: qsTr("控制延时、导出格式、DPI 元数据与输出目录。")
                 meta: "Options"
                 variant: "quiet"
 
@@ -204,22 +232,107 @@ Item {
                         spacing: themeController.palette.spacingMd
 
                         Label {
-                            text: qsTr("输出倍率")
+                            text: qsTr("输出格式")
+                            color: themeController.palette.textSecondary
+                        }
+
+                        ComboBox {
+                            id: outputFormatBox
+                            model: root.outputFormatItems
+                            textRole: "label"
+                            currentIndex: root.outputFormatIndex()
+                            onActivated: captureController.outputFormat = root.outputFormatItems[currentIndex].value
+                        }
+
+                        Label {
+                            text: qsTr("DPI")
+                            color: themeController.palette.textSecondary
+                        }
+
+                        ComboBox {
+                            id: dpiBox
+                            model: root.dpiItems
+                            textRole: "label"
+                            currentIndex: root.dpiIndex()
+                            onActivated: captureController.dpiValue = root.dpiItems[currentIndex].value
+                        }
+
+                        Label {
+                            text: qsTr("DPI 只影响部分文档/打印软件中的显示尺寸，不提升像素细节。")
+                            color: themeController.palette.textMuted
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: themeController.palette.spacingMd
+
+                        visible: captureController.outputFormat === "jpg"
+
+                        Label {
+                            text: qsTr("JPG 质量")
                             color: themeController.palette.textSecondary
                         }
 
                         SpinBox {
-                            from: 50
-                            to: 200
-                            value: captureController.scalePercent
-                            stepSize: 10
+                            from: 80
+                            to: 100
+                            value: captureController.jpegQuality
                             editable: true
-                            onValueModified: captureController.scalePercent = value
+                            onValueModified: captureController.jpegQuality = value
                         }
 
                         Label {
-                            text: qsTr("%1%").arg(captureController.scalePercent)
+                            text: qsTr("%1").arg(captureController.jpegQuality)
                             color: themeController.palette.textMuted
+                        }
+
+                        Item { Layout.fillWidth: true }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Label {
+                            text: qsTr("高级导出")
+                            color: themeController.palette.textSecondary
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: themeController.palette.spacingMd
+
+                            Label {
+                                text: qsTr("输出倍率")
+                                color: themeController.palette.textSecondary
+                            }
+
+                            SpinBox {
+                                from: 50
+                                to: 200
+                                value: captureController.scalePercent
+                                stepSize: 10
+                                editable: true
+                                onValueModified: captureController.scalePercent = value
+                            }
+
+                            Label {
+                                text: qsTr("%1%").arg(captureController.scalePercent)
+                                color: themeController.palette.textMuted
+                            }
+
+                            Item { Layout.fillWidth: true }
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("输出倍率会改变导出像素尺寸，不会提升截图清晰度。推荐保持 100%。")
+                            color: themeController.palette.textMuted
+                            wrapMode: Text.Wrap
+                            font.pixelSize: 12
                         }
 
                         Item { Layout.fillWidth: true }

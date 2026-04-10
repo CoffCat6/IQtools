@@ -34,6 +34,9 @@ class CaptureController : public QObject {
     Q_PROPERTY(bool autoCopyToClipboard READ autoCopyToClipboard WRITE setAutoCopyToClipboard NOTIFY autoCopyToClipboardChanged)
     Q_PROPERTY(int delaySeconds READ delaySeconds WRITE setDelaySeconds NOTIFY delaySecondsChanged)
     Q_PROPERTY(int scalePercent READ scalePercent WRITE setScalePercent NOTIFY scalePercentChanged)
+    Q_PROPERTY(QString outputFormat READ outputFormat WRITE setOutputFormat NOTIFY outputFormatChanged)
+    Q_PROPERTY(int jpegQuality READ jpegQuality WRITE setJpegQuality NOTIFY jpegQualityChanged)
+    Q_PROPERTY(int dpiValue READ dpiValue WRITE setDpiValue NOTIFY dpiValueChanged)
     Q_PROPERTY(bool annotationEnabled READ annotationEnabled WRITE setAnnotationEnabled NOTIFY annotationEnabledChanged)
     Q_PROPERTY(bool pinAfterCapture READ pinAfterCapture WRITE setPinAfterCapture NOTIFY pinAfterCaptureChanged)
     Q_PROPERTY(int annotationLineWidth READ annotationLineWidth WRITE setAnnotationLineWidth NOTIFY annotationOptionsChanged)
@@ -66,6 +69,9 @@ public:
     bool autoCopyToClipboard() const;
     int delaySeconds() const;
     int scalePercent() const;
+    QString outputFormat() const;
+    int jpegQuality() const;
+    int dpiValue() const;
     bool annotationEnabled() const;
     bool pinAfterCapture() const;
     int annotationLineWidth() const;
@@ -88,6 +94,9 @@ public:
     void setAutoCopyToClipboard(bool enabled);
     void setDelaySeconds(int seconds);
     void setScalePercent(int percent);
+    void setOutputFormat(const QString& format);
+    void setJpegQuality(int quality);
+    void setDpiValue(int dpi);
     void setAnnotationEnabled(bool enabled);
     void setPinAfterCapture(bool enabled);
     void setAnnotationLineWidth(int width);
@@ -127,6 +136,9 @@ signals:
     void autoCopyToClipboardChanged();
     void delaySecondsChanged();
     void scalePercentChanged();
+    void outputFormatChanged();
+    void jpegQualityChanged();
+    void dpiValueChanged();
     void annotationEnabledChanged();
     void pinAfterCaptureChanged();
     void annotationOptionsChanged();
@@ -148,6 +160,7 @@ private:
     void updateShortcutBinding();
     void setStatusMessage(const QString& message, int timeoutMs = 0);
     QString resolvedOutputDirectory() const;
+    iqtools::core::CaptureSaveOptions captureSaveOptions(iqtools::core::AnnotationOptions* annotationOptions) const;
     iqtools::core::AnnotationOptions annotationOptions() const;
     void persistAnnotationOptions(const iqtools::core::AnnotationOptions& options);
     QString shortcutToNativeText(const QString& portableText,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtCore/QList>
 #include <QtCore/QRect>
 #include <QtCore/QSize>
 #include <QtCore/QString>
@@ -9,61 +10,47 @@
 
 namespace iqtools::core {
 
-struct AnnotationOptions {
-    int lineWidth {3};
-    int textPixelSize {28};
-    int mosaicBlockSize {10};
-    int colorIndex {0};
-
-    QString shortcutRectangle;
-    QString shortcutArrow;
-    QString shortcutMosaic;
-    QString shortcutText;
-    QString shortcutUndo;
-    QString shortcutRedo;
-    QString shortcutColorCycle;
-};
-
-struct ScreenCaptureResult {
-    bool success {false};
-    QString filePath;
-    QString errorMessage;
-    QSize imageSize;
-};
-
 class ScreenCaptureService : public ICaptureService {
 public:
-    ScreenCaptureResult captureAndSave(const QString& outputDirectory,
-                                       const QString& format,
-                                       bool copyToClipboard,
-                                       int scalePercent = 100,
-                                       bool enableAnnotation = false,
-                                       AnnotationOptions* annotationOptions = nullptr) const override;
+    ScreenCaptureResult captureAndSave(const CaptureSaveOptions& options) const override;
 
-    ScreenCaptureResult captureRegionAndSave(const QString& outputDirectory,
-                                             const QString& format,
-                                             bool copyToClipboard,
-                                             int scalePercent = 100,
-                                             bool enableAnnotation = false,
-                                             AnnotationOptions* annotationOptions = nullptr) const override;
+    ScreenCaptureResult captureRegionAndSave(const CaptureSaveOptions& options) const override;
 
     QString defaultOutputDirectory() const override;
     QString platformCaptureHint() const override;
 
 private:
+    struct ScreenSlice {
+        QString name;
+        QRect logicalGeometry;
+        QImage sourceImage;
+        QSize pixelSize;
+        qreal screenDevicePixelRatio {1.0};
+        qreal imageDevicePixelRatio {1.0};
+        qreal scaleX {1.0};
+        qreal scaleY {1.0};
+    };
+
     struct DesktopSnapshot {
-        QImage image;
-        QRect geometry;
+        QRect logicalGeometry;
+        QImage previewImage;
+        QImage exportImage;
+        QList<ScreenSlice> screens;
+        qreal exportScale {1.0};
+        bool mixedScale {false};
     };
 
     static DesktopSnapshot captureVirtualDesktop();
+    static QImage cropSingleScreenRegion(const DesktopSnapshot& snapshot,
+                                         const QRect& logicalRegion);
+    static QImage cropExportRegion(const DesktopSnapshot& snapshot,
+                                   const QRect& logicalRegion);
+    static QRect scaleLogicalRect(const QRect& logicalRect, qreal scale);
     static ScreenCaptureResult saveImage(const QImage& image,
-                                         const QString& outputDirectory,
-                                         const QString& format,
-                                         bool copyToClipboard,
-                                         int scalePercent,
+                                         const CaptureSaveOptions& options,
                                          const QString& defaultDirectory);
     static QImage scaleImage(const QImage& source, int scalePercent);
+    static QImage imageWithDpiMetadata(const QImage& source, int dpi);
     static QString normalizedFormat(const QString& format);
     static QString buildFileName(const QString& format);
     static bool isWaylandSession();
