@@ -76,6 +76,7 @@ public:
     bool updateShortcut(const QString& id, const QKeySequence& newKey);
     QString checkConflict(const QKeySequence& key,
                           const QString& ignoreId = QString()) const;
+    QKeySequence shortcut(const QString& id) const;
 
     QVector<ShortcutItem> allShortcuts() const;
 

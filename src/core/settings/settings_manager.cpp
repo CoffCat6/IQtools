@@ -23,6 +23,23 @@ constexpr auto kKeyLogFile = "log_file_enabled";
 constexpr auto kKeyLogLevel = "log_minimum_level";
 constexpr auto kKeyLogDirectory = "log_directory";
 constexpr auto kKeyShortcutPrefix = "shortcut.";
+constexpr auto kKeyCaptureOutputDirectory = "capture_output_directory";
+constexpr auto kKeyCaptureAutoCopy = "capture_auto_copy";
+constexpr auto kKeyCaptureDelaySeconds = "capture_delay_seconds";
+constexpr auto kKeyCaptureScalePercent = "capture_scale_percent";
+constexpr auto kKeyCaptureAnnotationEnabled = "capture_annotation_enabled";
+constexpr auto kKeyCapturePinAfterCapture = "capture_pin_after_capture";
+constexpr auto kKeyCaptureAnnotationLineWidth = "capture_annotation_line_width";
+constexpr auto kKeyCaptureAnnotationTextSize = "capture_annotation_text_size";
+constexpr auto kKeyCaptureAnnotationMosaicBlockSize = "capture_annotation_mosaic_block_size";
+constexpr auto kKeyCaptureAnnotationColorIndex = "capture_annotation_color_index";
+constexpr auto kKeyCaptureAnnotationShortcutRectangle = "capture_annotation_shortcut_rectangle";
+constexpr auto kKeyCaptureAnnotationShortcutArrow = "capture_annotation_shortcut_arrow";
+constexpr auto kKeyCaptureAnnotationShortcutMosaic = "capture_annotation_shortcut_mosaic";
+constexpr auto kKeyCaptureAnnotationShortcutText = "capture_annotation_shortcut_text";
+constexpr auto kKeyCaptureAnnotationShortcutUndo = "capture_annotation_shortcut_undo";
+constexpr auto kKeyCaptureAnnotationShortcutRedo = "capture_annotation_shortcut_redo";
+constexpr auto kKeyCaptureAnnotationShortcutColorCycle = "capture_annotation_shortcut_color_cycle";
 
 QString defaultSettingsPath() {
   const QString appDataDir =
@@ -210,6 +227,258 @@ bool SettingsManager::setShortcutMappings(
   return saved;
 }
 
+QString SettingsManager::captureOutputDirectory() const {
+  return m_captureOutputDirectory;
+}
+
+void SettingsManager::setCaptureOutputDirectory(const QString& directory) {
+  const QString normalized = directory.trimmed();
+  if (m_captureOutputDirectory == normalized) {
+    return;
+  }
+
+  m_captureOutputDirectory = normalized;
+  save();
+  emit settingsChanged();
+}
+
+bool SettingsManager::captureAutoCopyToClipboard() const {
+  return m_captureAutoCopyToClipboard;
+}
+
+void SettingsManager::setCaptureAutoCopyToClipboard(bool enabled) {
+  if (m_captureAutoCopyToClipboard == enabled) {
+    return;
+  }
+
+  m_captureAutoCopyToClipboard = enabled;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureDelaySeconds() const {
+  return m_captureDelaySeconds;
+}
+
+void SettingsManager::setCaptureDelaySeconds(int seconds) {
+  const int normalized = qBound(0, seconds, 10);
+  if (m_captureDelaySeconds == normalized) {
+    return;
+  }
+
+  m_captureDelaySeconds = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureScalePercent() const {
+  return m_captureScalePercent;
+}
+
+void SettingsManager::setCaptureScalePercent(int percent) {
+  const int normalized = qBound(50, percent, 200);
+  if (m_captureScalePercent == normalized) {
+    return;
+  }
+
+  m_captureScalePercent = normalized;
+  save();
+  emit settingsChanged();
+}
+
+bool SettingsManager::captureAnnotationEnabled() const {
+  return m_captureAnnotationEnabled;
+}
+
+void SettingsManager::setCaptureAnnotationEnabled(bool enabled) {
+  if (m_captureAnnotationEnabled == enabled) {
+    return;
+  }
+
+  m_captureAnnotationEnabled = enabled;
+  save();
+  emit settingsChanged();
+}
+
+bool SettingsManager::capturePinAfterCapture() const {
+  return m_capturePinAfterCapture;
+}
+
+void SettingsManager::setCapturePinAfterCapture(bool enabled) {
+  if (m_capturePinAfterCapture == enabled) {
+    return;
+  }
+
+  m_capturePinAfterCapture = enabled;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureAnnotationLineWidth() const {
+  return m_captureAnnotationLineWidth;
+}
+
+void SettingsManager::setCaptureAnnotationLineWidth(int width) {
+  const int normalized = qBound(1, width, 12);
+  if (m_captureAnnotationLineWidth == normalized) {
+    return;
+  }
+
+  m_captureAnnotationLineWidth = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureAnnotationTextSize() const {
+  return m_captureAnnotationTextSize;
+}
+
+void SettingsManager::setCaptureAnnotationTextSize(int size) {
+  const int normalized = qBound(12, size, 96);
+  if (m_captureAnnotationTextSize == normalized) {
+    return;
+  }
+
+  m_captureAnnotationTextSize = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureAnnotationMosaicBlockSize() const {
+  return m_captureAnnotationMosaicBlockSize;
+}
+
+void SettingsManager::setCaptureAnnotationMosaicBlockSize(int size) {
+  const int normalized = qBound(4, size, 64);
+  if (m_captureAnnotationMosaicBlockSize == normalized) {
+    return;
+  }
+
+  m_captureAnnotationMosaicBlockSize = normalized;
+  save();
+  emit settingsChanged();
+}
+
+int SettingsManager::captureAnnotationColorIndex() const {
+  return m_captureAnnotationColorIndex;
+}
+
+void SettingsManager::setCaptureAnnotationColorIndex(int index) {
+  const int normalized = qBound(0, index, 7);
+  if (m_captureAnnotationColorIndex == normalized) {
+    return;
+  }
+
+  m_captureAnnotationColorIndex = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutRectangle() const {
+  return m_captureAnnotationShortcutRectangle;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutRectangle(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutRectangle == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutRectangle = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutArrow() const {
+  return m_captureAnnotationShortcutArrow;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutArrow(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutArrow == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutArrow = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutMosaic() const {
+  return m_captureAnnotationShortcutMosaic;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutMosaic(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutMosaic == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutMosaic = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutText() const {
+  return m_captureAnnotationShortcutText;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutText(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutText == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutText = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutUndo() const {
+  return m_captureAnnotationShortcutUndo;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutUndo(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutUndo == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutUndo = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutRedo() const {
+  return m_captureAnnotationShortcutRedo;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutRedo(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutRedo == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutRedo = normalized;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::captureAnnotationShortcutColorCycle() const {
+  return m_captureAnnotationShortcutColorCycle;
+}
+
+void SettingsManager::setCaptureAnnotationShortcutColorCycle(const QString& portableText) {
+  const QString normalized = portableText.trimmed();
+  if (m_captureAnnotationShortcutColorCycle == normalized) {
+    return;
+  }
+
+  m_captureAnnotationShortcutColorCycle = normalized;
+  save();
+  emit settingsChanged();
+}
+
 // ─── Private ───
 
 void SettingsManager::loadDefaults() {
@@ -225,6 +494,23 @@ void SettingsManager::loadDefaults() {
   m_logMinimumLevel = QStringLiteral("Debug");
   m_logDirectory = QString();  // Will use default in Logger
   m_shortcuts.clear();
+  m_captureOutputDirectory.clear();
+  m_captureAutoCopyToClipboard = true;
+  m_captureDelaySeconds = 3;
+  m_captureScalePercent = 100;
+  m_captureAnnotationEnabled = false;
+  m_capturePinAfterCapture = false;
+  m_captureAnnotationLineWidth = 3;
+  m_captureAnnotationTextSize = 28;
+  m_captureAnnotationMosaicBlockSize = 10;
+  m_captureAnnotationColorIndex = 0;
+  m_captureAnnotationShortcutRectangle = QStringLiteral("1");
+  m_captureAnnotationShortcutArrow = QStringLiteral("2");
+  m_captureAnnotationShortcutMosaic = QStringLiteral("3");
+  m_captureAnnotationShortcutText = QStringLiteral("4");
+  m_captureAnnotationShortcutUndo = QStringLiteral("Ctrl+Z");
+  m_captureAnnotationShortcutRedo = QStringLiteral("Ctrl+Y");
+  m_captureAnnotationShortcutColorCycle = QStringLiteral("C");
 }
 
 void SettingsManager::syncFromStorage() {
@@ -253,6 +539,60 @@ void SettingsManager::syncFromStorage() {
           .toString();
   m_logDirectory =
       m_storage->value(QLatin1String(kKeyLogDirectory), QString()).toString();
+  m_captureOutputDirectory =
+      m_storage->value(QLatin1String(kKeyCaptureOutputDirectory), QString())
+          .toString();
+  m_captureAutoCopyToClipboard =
+      m_storage->value(QLatin1String(kKeyCaptureAutoCopy), true).toBool();
+  m_captureDelaySeconds =
+      qBound(0,
+             m_storage->value(QLatin1String(kKeyCaptureDelaySeconds), 3).toInt(),
+             10);
+  m_captureScalePercent =
+      qBound(50,
+             m_storage->value(QLatin1String(kKeyCaptureScalePercent), 100).toInt(),
+             200);
+    m_captureAnnotationEnabled =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationEnabled), false).toBool();
+    m_capturePinAfterCapture =
+      m_storage->value(QLatin1String(kKeyCapturePinAfterCapture), false).toBool();
+    m_captureAnnotationLineWidth =
+      qBound(1,
+         m_storage->value(QLatin1String(kKeyCaptureAnnotationLineWidth), 3).toInt(),
+         12);
+    m_captureAnnotationTextSize =
+      qBound(12,
+         m_storage->value(QLatin1String(kKeyCaptureAnnotationTextSize), 28).toInt(),
+         96);
+    m_captureAnnotationMosaicBlockSize =
+      qBound(4,
+         m_storage->value(QLatin1String(kKeyCaptureAnnotationMosaicBlockSize), 10).toInt(),
+         64);
+    m_captureAnnotationColorIndex =
+      qBound(0,
+         m_storage->value(QLatin1String(kKeyCaptureAnnotationColorIndex), 0).toInt(),
+         7);
+    m_captureAnnotationShortcutRectangle =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutRectangle),
+               QStringLiteral("1")).toString().trimmed();
+    m_captureAnnotationShortcutArrow =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutArrow),
+               QStringLiteral("2")).toString().trimmed();
+    m_captureAnnotationShortcutMosaic =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutMosaic),
+               QStringLiteral("3")).toString().trimmed();
+    m_captureAnnotationShortcutText =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutText),
+               QStringLiteral("4")).toString().trimmed();
+    m_captureAnnotationShortcutUndo =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutUndo),
+               QStringLiteral("Ctrl+Z")).toString().trimmed();
+    m_captureAnnotationShortcutRedo =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutRedo),
+               QStringLiteral("Ctrl+Y")).toString().trimmed();
+    m_captureAnnotationShortcutColorCycle =
+      m_storage->value(QLatin1String(kKeyCaptureAnnotationShortcutColorCycle),
+               QStringLiteral("C")).toString().trimmed();
 
   m_shortcuts.clear();
   const QString shortcutPrefix = QString::fromLatin1(kKeyShortcutPrefix);
@@ -287,6 +627,38 @@ void SettingsManager::syncToStorage() {
   values.insert(QLatin1String(kKeyLogFile), m_logFileEnabled);
   values.insert(QLatin1String(kKeyLogLevel), m_logMinimumLevel);
   values.insert(QLatin1String(kKeyLogDirectory), m_logDirectory);
+  values.insert(QLatin1String(kKeyCaptureOutputDirectory),
+                m_captureOutputDirectory);
+  values.insert(QLatin1String(kKeyCaptureAutoCopy),
+                m_captureAutoCopyToClipboard);
+  values.insert(QLatin1String(kKeyCaptureDelaySeconds), m_captureDelaySeconds);
+  values.insert(QLatin1String(kKeyCaptureScalePercent), m_captureScalePercent);
+  values.insert(QLatin1String(kKeyCaptureAnnotationEnabled),
+                m_captureAnnotationEnabled);
+  values.insert(QLatin1String(kKeyCapturePinAfterCapture),
+                m_capturePinAfterCapture);
+  values.insert(QLatin1String(kKeyCaptureAnnotationLineWidth),
+                m_captureAnnotationLineWidth);
+  values.insert(QLatin1String(kKeyCaptureAnnotationTextSize),
+                m_captureAnnotationTextSize);
+  values.insert(QLatin1String(kKeyCaptureAnnotationMosaicBlockSize),
+                m_captureAnnotationMosaicBlockSize);
+  values.insert(QLatin1String(kKeyCaptureAnnotationColorIndex),
+                m_captureAnnotationColorIndex);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutRectangle),
+                m_captureAnnotationShortcutRectangle);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutArrow),
+                m_captureAnnotationShortcutArrow);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutMosaic),
+                m_captureAnnotationShortcutMosaic);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutText),
+                m_captureAnnotationShortcutText);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutUndo),
+                m_captureAnnotationShortcutUndo);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutRedo),
+                m_captureAnnotationShortcutRedo);
+  values.insert(QLatin1String(kKeyCaptureAnnotationShortcutColorCycle),
+                m_captureAnnotationShortcutColorCycle);
 
   const QString shortcutPrefix = QString::fromLatin1(kKeyShortcutPrefix);
   for (auto it = values.begin(); it != values.end();) {

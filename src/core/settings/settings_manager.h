@@ -73,6 +73,58 @@ public:
   QMap<QString, QString> shortcutMappings() const;
   bool setShortcutMappings(const QMap<QString, QString>& shortcuts);
 
+  // ─── Capture settings ───
+  QString captureOutputDirectory() const;
+  void setCaptureOutputDirectory(const QString& directory);
+
+  bool captureAutoCopyToClipboard() const;
+  void setCaptureAutoCopyToClipboard(bool enabled);
+
+  int captureDelaySeconds() const;
+  void setCaptureDelaySeconds(int seconds);
+
+  int captureScalePercent() const;
+  void setCaptureScalePercent(int percent);
+
+  bool captureAnnotationEnabled() const;
+  void setCaptureAnnotationEnabled(bool enabled);
+
+  bool capturePinAfterCapture() const;
+  void setCapturePinAfterCapture(bool enabled);
+
+  int captureAnnotationLineWidth() const;
+  void setCaptureAnnotationLineWidth(int width);
+
+  int captureAnnotationTextSize() const;
+  void setCaptureAnnotationTextSize(int size);
+
+  int captureAnnotationMosaicBlockSize() const;
+  void setCaptureAnnotationMosaicBlockSize(int size);
+
+  int captureAnnotationColorIndex() const;
+  void setCaptureAnnotationColorIndex(int index);
+
+  QString captureAnnotationShortcutRectangle() const;
+  void setCaptureAnnotationShortcutRectangle(const QString& portableText);
+
+  QString captureAnnotationShortcutArrow() const;
+  void setCaptureAnnotationShortcutArrow(const QString& portableText);
+
+  QString captureAnnotationShortcutMosaic() const;
+  void setCaptureAnnotationShortcutMosaic(const QString& portableText);
+
+  QString captureAnnotationShortcutText() const;
+  void setCaptureAnnotationShortcutText(const QString& portableText);
+
+  QString captureAnnotationShortcutUndo() const;
+  void setCaptureAnnotationShortcutUndo(const QString& portableText);
+
+  QString captureAnnotationShortcutRedo() const;
+  void setCaptureAnnotationShortcutRedo(const QString& portableText);
+
+  QString captureAnnotationShortcutColorCycle() const;
+  void setCaptureAnnotationShortcutColorCycle(const QString& portableText);
+
 signals:
   void settingsChanged();
   void defaultThemeChanged(const QString &theme);
@@ -99,6 +151,24 @@ private:
   QString m_logMinimumLevel;
   QString m_logDirectory;
   QMap<QString, QString> m_shortcuts;
+
+  QString m_captureOutputDirectory;
+  bool m_captureAutoCopyToClipboard{true};
+  int m_captureDelaySeconds{3};
+  int m_captureScalePercent{100};
+  bool m_captureAnnotationEnabled{false};
+  bool m_capturePinAfterCapture{false};
+  int m_captureAnnotationLineWidth{3};
+  int m_captureAnnotationTextSize{28};
+  int m_captureAnnotationMosaicBlockSize{10};
+  int m_captureAnnotationColorIndex{0};
+  QString m_captureAnnotationShortcutRectangle;
+  QString m_captureAnnotationShortcutArrow;
+  QString m_captureAnnotationShortcutMosaic;
+  QString m_captureAnnotationShortcutText;
+  QString m_captureAnnotationShortcutUndo;
+  QString m_captureAnnotationShortcutRedo;
+  QString m_captureAnnotationShortcutColorCycle;
 };
 
 } // namespace iqtools::core

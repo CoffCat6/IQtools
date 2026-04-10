@@ -3,7 +3,13 @@
 #ifndef IQTOOLS_CAPTURE_PLUGIN_H
 #define IQTOOLS_CAPTURE_PLUGIN_H
 
+#include <memory>
+
 #include <plugin-api/itool_plugin.h>
+
+namespace iqtools::core {
+class ICaptureService;
+}
 
 namespace iqtools::plugins {
 
@@ -17,6 +23,11 @@ public:
 
     QString toolId() const override;
     QString displayName() const override;
+
+    iqtools::core::ICaptureService* captureService() const;
+
+private:
+    std::unique_ptr<iqtools::core::ICaptureService> m_captureService;
 };
 
 }  // namespace iqtools::plugins

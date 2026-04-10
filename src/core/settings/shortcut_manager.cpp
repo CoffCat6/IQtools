@@ -36,6 +36,7 @@ constexpr DefaultShortcutDefinition kDefaultAppShortcuts[] = {
     {"tool.run", "工具/执行", "运行当前工具/脚本", "F5"},
     {"tool.stop", "工具/执行", "停止/终止运行", "Shift+F5"},
     {"tool.build", "工具/执行", "编译/构建", "Ctrl+B"},
+    {"tool.capture", "工具/执行", "触发截图", "Alt+C"},
     {"tool.clear_log", "工具/执行", "清空输出日志", "Ctrl+L"},
     {"help.doc", "帮助/系统", "查看帮助文档", "F1"},
     {"app.settings", "帮助/系统", "打开系统设置/偏好设置", "Ctrl+,"},
@@ -280,6 +281,16 @@ QString ShortcutManager::checkConflict(const QKeySequence& key,
         }
     }
     return QString();
+}
+
+QKeySequence ShortcutManager::shortcut(const QString& id) const
+{
+    const QString normalizedId = normalizeId(id);
+    const auto it = m_shortcuts.constFind(normalizedId);
+    if (it == m_shortcuts.constEnd()) {
+        return {};
+    }
+    return it->currentKey;
 }
 
 QVector<ShortcutItem> ShortcutManager::allShortcuts() const

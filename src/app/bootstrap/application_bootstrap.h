@@ -17,12 +17,17 @@ namespace iqtools::app::bridge {
 class ToolListModel;
 class ThemeController;
 class NavigationController;
+class CaptureController;
 class LoggingSettingsController;
 class LogConsoleController;
 class SettingsController;
 class WindowController;
 class UpdateController;
 class AppFacade;
+}
+
+namespace iqtools::plugins {
+class CapturePlugin;
 }
 
 namespace iqtools::app {
@@ -48,6 +53,7 @@ private:
     std::unique_ptr<iqtools::app::bridge::ToolListModel> m_toolListModel;
     std::unique_ptr<iqtools::app::bridge::ThemeController> m_themeController;
     std::unique_ptr<iqtools::app::bridge::NavigationController> m_navigationController;
+    std::unique_ptr<iqtools::app::bridge::CaptureController> m_captureController;
     std::unique_ptr<iqtools::app::bridge::LoggingSettingsController> m_loggingSettingsController;
     std::unique_ptr<iqtools::app::bridge::LogConsoleController> m_logConsoleController;
     std::unique_ptr<iqtools::app::bridge::SettingsController> m_settingsController;
@@ -58,6 +64,7 @@ private:
     std::unique_ptr<iqtools::core::I18nManager> m_i18nManager;
     std::unique_ptr<iqtools::core::UpdateChecker> m_updateChecker;
     std::unique_ptr<iqtools::app::bridge::AppFacade> m_appFacade;
+    iqtools::plugins::CapturePlugin* m_capturePlugin {nullptr};
 };
 
 }  // namespace iqtools::app

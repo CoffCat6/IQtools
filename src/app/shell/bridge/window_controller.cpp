@@ -68,9 +68,15 @@ void WindowController::setupTrayIcon()
 
     // Build context menu
     m_trayMenu = new QMenu();
+    auto* quickCaptureAction = m_trayMenu->addAction(QStringLiteral("快速全屏截图"));
+    auto* quickRegionCaptureAction = m_trayMenu->addAction(QStringLiteral("快速区域截图"));
+    m_trayMenu->addSeparator();
     auto* showAction = m_trayMenu->addAction(QStringLiteral("显示主窗口"));
     m_trayMenu->addSeparator();
     auto* quitAction = m_trayMenu->addAction(QStringLiteral("退出"));
+
+    connect(quickCaptureAction, &QAction::triggered, this, &WindowController::quickCaptureRequested);
+    connect(quickRegionCaptureAction, &QAction::triggered, this, &WindowController::quickRegionCaptureRequested);
 
     connect(showAction, &QAction::triggered, this, [this]() {
         if (m_window != nullptr) {

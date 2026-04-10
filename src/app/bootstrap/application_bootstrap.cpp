@@ -11,6 +11,7 @@
 #include <QtWidgets/QApplication>
 
 #include "app/shell/bridge/app_facade.h"
+#include "app/shell/bridge/capture_controller.h"
 #include "app/shell/bridge/log_console_controller.h"
 #include "app/shell/bridge/logging_settings_controller.h"
 #include "app/shell/bridge/navigation_controller.h"
@@ -21,6 +22,7 @@
 #include "app/shell/bridge/window_controller.h"
 #include "app/shell/main_window.h"
 #include "core/appcontext/app_context.h"
+#include "core/capture/i_capture_service.h"
 #include "core/services/i18n_manager.h"
 #include "core/services/log_service.h"
 #include "core/services/theme_manager.h"
@@ -28,15 +30,13 @@
 #include "core/settings/shortcut_manager.h"
 #include "core/settings/settings_manager.h"
 #include "infra/logging/logger.h"
+#include "plugins/capture/capture_plugin.h"
 
 namespace iqtools::app {
 
 ApplicationBootstrap::ApplicationBootstrap() = default;
 
 ApplicationBootstrap::~ApplicationBootstrap() {
-  if (m_appContext != nullptr) {
-    m_appContext->pluginManager().setShortcutManager(nullptr);
-  }
   iqtools::infra::logging::Logger::shutdown();
 }
 
@@ -80,7 +80,25 @@ void ApplicationBootstrap::initCore() {
 
   // Expose shortcut-aware plugin context.
   m_appContext->pluginManager().setShortcutManager(m_shortcutManager.get());
+
+  // Capture plugin is now host-registered and lifecycle-managed by PluginManager.
+  auto capturePlugin = std::make_unique<iqtools::plugins::CapturePlugin>();
+  m_capturePlugin = capturePlugin.get();
+  if (!m_appContext->pluginManager().registerBuiltinPlugin(std::move(capturePlugin))) {
+    iqtools::infra::logging::Logger::warning(
+        QStringLiteral("app.bootstrap"),
+        QStringLiteral("CapturePlugin registration failed, fallback service will be used"));
+    m_capturePlugin = nullptr;
+  }
+
   m_appContext->pluginManager().initialize();
+  if (m_capturePlugin != nullptr &&
+      m_appContext->pluginManager().plugin(QStringLiteral("com.iqtools.plugin.capture")) == nullptr) {
+    iqtools::infra::logging::Logger::warning(
+        QStringLiteral("app.bootstrap"),
+        QStringLiteral("CapturePlugin activation failed, fallback service will be used"));
+    m_capturePlugin = nullptr;
+  }
 
   // Initialize i18n manager with saved language preference
   m_i18nManager = std::make_unique<iqtools::core::I18nManager>();
@@ -106,6 +124,10 @@ void ApplicationBootstrap::initPresentation() {
   m_themeController = std::make_unique<iqtools::app::bridge::ThemeController>();
   m_navigationController =
       std::make_unique<iqtools::app::bridge::NavigationController>();
+  iqtools::core::ICaptureService* captureService =
+      (m_capturePlugin != nullptr) ? m_capturePlugin->captureService() : nullptr;
+  m_captureController = std::make_unique<iqtools::app::bridge::CaptureController>(
+      m_settingsManager.get(), m_shortcutManager.get(), captureService);
   m_loggingSettingsController =
       std::make_unique<iqtools::app::bridge::LoggingSettingsController>(
           m_settingsManager.get());
@@ -142,6 +164,8 @@ void ApplicationBootstrap::initPresentation() {
                                   m_themeController.get());
   rootContext->setContextProperty(QStringLiteral("navigationController"),
                                   m_navigationController.get());
+  rootContext->setContextProperty(QStringLiteral("captureController"),
+                                  m_captureController.get());
   rootContext->setContextProperty(QStringLiteral("toolListModel"),
                                   m_toolListModel.get());
   rootContext->setContextProperty(QStringLiteral("loggingSettings"),

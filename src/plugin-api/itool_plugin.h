@@ -3,6 +3,8 @@
 #ifndef IQTOOLS_ITOOL_PLUGIN_H
 #define IQTOOLS_ITOOL_PLUGIN_H
 
+#include <QtCore/QObject>
+
 #include "iplugin.h"
 
 namespace iqtools::pluginapi {
@@ -16,5 +18,8 @@ public:
 };
 
 }  // namespace iqtools::pluginapi
+
+#define IQTOOLS_ITOOL_PLUGIN_IID "com.iqtools.pluginapi.IToolPlugin/1.0"
+Q_DECLARE_INTERFACE(iqtools::pluginapi::IToolPlugin, IQTOOLS_ITOOL_PLUGIN_IID)
 
 #endif  // IQTOOLS_ITOOL_PLUGIN_H

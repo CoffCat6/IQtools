@@ -15,11 +15,20 @@ ApplicationWindow {
     // ─── Attach WindowController to this window for close-event interception ───
     Component.onCompleted: {
         windowController.attachToWindow(window)
+        captureController.attachToWindow(window)
     }
 
     // ─── Connect WindowController signals ───
     Connections {
         target: windowController
+
+        function onQuickCaptureRequested() {
+            captureController.captureNow()
+        }
+
+        function onQuickRegionCaptureRequested() {
+            captureController.captureRegion()
+        }
 
         function onExitConfirmationNeeded() {
             exitDialog.open()

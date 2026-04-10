@@ -27,13 +27,19 @@ set(IQTOOLS_SOURCES
     src/app/shell/bridge/tool_list_model.cpp
     src/app/shell/bridge/theme_controller.cpp
     src/app/shell/bridge/navigation_controller.cpp
+    src/app/shell/bridge/capture_controller.cpp
     src/app/shell/bridge/logging_settings_controller.cpp
     src/app/shell/bridge/log_console_controller.cpp
     src/app/shell/bridge/settings_controller.cpp
     src/app/shell/bridge/window_controller.cpp
     src/app/shell/bridge/update_controller.cpp
     src/app/shell/bridge/app_facade.cpp
+    src/app/shell/widgets/pin_image_window.cpp
     src/core/appcontext/app_context.cpp
+    src/core/capture/screen_capture_service.cpp
+    src/core/capture/region_selection_dialog.cpp
+    src/core/capture/annotation_dialog.cpp
+    src/plugins/capture/capture_plugin.cpp
     src/core/tools/tool_registry.cpp
     src/core/services/log_service.cpp
     src/core/services/theme_manager.cpp
@@ -54,13 +60,20 @@ set(IQTOOLS_HEADERS
     src/app/shell/bridge/tool_list_model.h
     src/app/shell/bridge/theme_controller.h
     src/app/shell/bridge/navigation_controller.h
+    src/app/shell/bridge/capture_controller.h
     src/app/shell/bridge/logging_settings_controller.h
     src/app/shell/bridge/log_console_controller.h
     src/app/shell/bridge/settings_controller.h
     src/app/shell/bridge/window_controller.h
     src/app/shell/bridge/update_controller.h
     src/app/shell/bridge/app_facade.h
+    src/app/shell/widgets/pin_image_window.h
     src/core/appcontext/app_context.h
+    src/core/capture/screen_capture_service.h
+    src/core/capture/i_capture_service.h
+    src/core/capture/region_selection_dialog.h
+    src/core/capture/annotation_dialog.h
+    src/plugins/capture/capture_plugin.h
     src/core/tools/tool_registry.h
     src/core/tools/tool_metadata.h
     src/core/services/log_service.h

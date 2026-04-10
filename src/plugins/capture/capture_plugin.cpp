@@ -2,6 +2,7 @@
 
 #include <QtCore/QString>
 
+#include <core/capture/screen_capture_service.h>
 #include <infra/logging/logger.h>
 
 namespace iqtools::plugins {
@@ -18,6 +19,10 @@ pluginapi::PluginInfo CapturePlugin::pluginInfo() const
 
 bool CapturePlugin::initialize()
 {
+    if (m_captureService == nullptr) {
+        m_captureService = std::make_unique<iqtools::core::ScreenCaptureService>();
+    }
+
     infra::logging::Logger::info(
         QStringLiteral("plugins.capture"),
         QStringLiteral("CapturePlugin initialized"));
@@ -26,6 +31,8 @@ bool CapturePlugin::initialize()
 
 void CapturePlugin::shutdown()
 {
+    m_captureService.reset();
+
     infra::logging::Logger::info(
         QStringLiteral("plugins.capture"),
         QStringLiteral("CapturePlugin shutdown"));
@@ -39,6 +46,11 @@ QString CapturePlugin::toolId() const
 QString CapturePlugin::displayName() const
 {
     return QStringLiteral("截图工具");
+}
+
+iqtools::core::ICaptureService* CapturePlugin::captureService() const
+{
+    return m_captureService.get();
 }
 
 }  // namespace iqtools::plugins

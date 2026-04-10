@@ -34,6 +34,12 @@ public:
     Q_INVOKABLE void setTrayVisible(bool visible);
 
 signals:
+    /// Emitted when user selects tray menu action for instant full-screen capture.
+    void quickCaptureRequested();
+
+    /// Emitted when user selects tray menu action for instant region capture.
+    void quickRegionCaptureRequested();
+
     /// Emitted when the user selects "Show" from the tray context menu.
     void showWindowRequested();
 
