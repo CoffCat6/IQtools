@@ -19,6 +19,7 @@
 #include "app/shell/bridge/theme_controller.h"
 #include "app/shell/bridge/tool_list_model.h"
 #include "app/shell/bridge/update_controller.h"
+#include "app/shell/bridge/translation_controller.h"
 #include "app/shell/bridge/window_controller.h"
 #include "app/shell/main_window.h"
 #include "core/appcontext/app_context.h"
@@ -27,6 +28,7 @@
 #include "core/services/log_service.h"
 #include "core/services/theme_manager.h"
 #include "core/services/update_checker.h"
+#include "core/services/translation_service.h"
 #include "core/settings/shortcut_manager.h"
 #include "core/settings/settings_manager.h"
 #include "infra/logging/logger.h"
@@ -107,6 +109,9 @@ void ApplicationBootstrap::initCore() {
   // Initialize update checker
   m_updateChecker = std::make_unique<iqtools::core::UpdateChecker>();
 
+  // Initialize translation service
+  m_translationService = std::make_unique<iqtools::core::TranslationService>();
+
   iqtools::infra::logging::Logger::info(
       QStringLiteral("app.bootstrap"),
       QStringLiteral("Core initialized, settings loaded from: %1")
@@ -141,6 +146,8 @@ void ApplicationBootstrap::initPresentation() {
       m_settingsManager.get());
   m_updateController = std::make_unique<iqtools::app::bridge::UpdateController>(
       m_updateChecker.get());
+  m_translationController = std::make_unique<iqtools::app::bridge::TranslationController>(
+      m_translationService.get(), m_settingsManager.get());
   m_appFacade = std::make_unique<iqtools::app::bridge::AppFacade>(
       m_themeController.get(), m_navigationController.get(),
       m_toolListModel.get(), m_loggingSettingsController.get());
@@ -177,7 +184,9 @@ void ApplicationBootstrap::initPresentation() {
   rootContext->setContextProperty(QStringLiteral("windowController"),
                                   m_windowController.get());
   rootContext->setContextProperty(QStringLiteral("updateController"),
-                                  m_updateController.get());
+                                   m_updateController.get());
+  rootContext->setContextProperty(QStringLiteral("translationController"),
+                                   m_translationController.get());
 
   const QUrl mainQmlUrl(
       QStringLiteral("qrc:/IQtools/src/app/shell/qml/main.qml"));

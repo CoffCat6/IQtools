@@ -20,7 +20,7 @@ bool TranslatePlugin::initialize()
 {
     infra::logging::Logger::info(
         QStringLiteral("plugins.translate"),
-        QStringLiteral("TranslatePlugin initialized"));
+        QStringLiteral("TranslatePlugin initialized - Translation service ready"));
     return true;
 }
 

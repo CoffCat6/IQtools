@@ -16,6 +16,8 @@ constexpr auto kKeyTheme = "default_theme";
 constexpr auto kKeyAutoStart = "auto_start";
 constexpr auto kKeyCheckUpdate = "check_update";
 constexpr auto kKeyLanguage = "language";
+constexpr auto kKeyTranslationSourceLanguage = "translation_source_language";
+constexpr auto kKeyTranslationTargetLanguage = "translation_target_language";
 constexpr auto kKeyMinToTray = "minimize_to_tray";
 constexpr auto kKeyConfirmExit = "confirm_on_exit";
 // Logging keys
@@ -165,6 +167,34 @@ void SettingsManager::setLanguage(const QString &lang) {
     return;
   }
   m_language = lang;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::translationSourceLanguage() const {
+  return m_translationSourceLanguage;
+}
+
+void SettingsManager::setTranslationSourceLanguage(const QString& lang) {
+  if (m_translationSourceLanguage == lang) {
+    return;
+  }
+
+  m_translationSourceLanguage = lang;
+  save();
+  emit settingsChanged();
+}
+
+QString SettingsManager::translationTargetLanguage() const {
+  return m_translationTargetLanguage;
+}
+
+void SettingsManager::setTranslationTargetLanguage(const QString& lang) {
+  if (m_translationTargetLanguage == lang) {
+    return;
+  }
+
+  m_translationTargetLanguage = lang;
   save();
   emit settingsChanged();
 }
@@ -566,6 +596,8 @@ void SettingsManager::loadDefaults() {
   m_autoStart = false;
   m_checkUpdate = true;
   m_language = QStringLiteral("zh_CN");
+  m_translationSourceLanguage = QStringLiteral("auto");
+  m_translationTargetLanguage = QStringLiteral("zh-CN");
   m_minimizeToTray = false;
   m_confirmOnExit = true;
   // Logging defaults
@@ -608,6 +640,16 @@ void SettingsManager::syncFromStorage() {
   m_language =
       m_storage->value(QLatin1String(kKeyLanguage), QStringLiteral("zh_CN"))
           .toString();
+  m_translationSourceLanguage =
+      m_storage->value(QLatin1String(kKeyTranslationSourceLanguage),
+                       QStringLiteral("auto"))
+          .toString()
+          .trimmed();
+  m_translationTargetLanguage =
+      m_storage->value(QLatin1String(kKeyTranslationTargetLanguage),
+                       QStringLiteral("zh-CN"))
+          .toString()
+          .trimmed();
   m_minimizeToTray =
       m_storage->value(QLatin1String(kKeyMinToTray), false).toBool();
   m_confirmOnExit =
@@ -714,6 +756,10 @@ void SettingsManager::syncToStorage() {
   values.insert(QLatin1String(kKeyAutoStart), m_autoStart);
   values.insert(QLatin1String(kKeyCheckUpdate), m_checkUpdate);
   values.insert(QLatin1String(kKeyLanguage), m_language);
+  values.insert(QLatin1String(kKeyTranslationSourceLanguage),
+                m_translationSourceLanguage);
+  values.insert(QLatin1String(kKeyTranslationTargetLanguage),
+                m_translationTargetLanguage);
   values.insert(QLatin1String(kKeyMinToTray), m_minimizeToTray);
   values.insert(QLatin1String(kKeyConfirmExit), m_confirmOnExit);
   values.insert(QLatin1String(kKeyLogConsole), m_logConsoleEnabled);

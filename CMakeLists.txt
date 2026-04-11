@@ -33,6 +33,7 @@ set(IQTOOLS_SOURCES
     src/app/shell/bridge/settings_controller.cpp
     src/app/shell/bridge/window_controller.cpp
     src/app/shell/bridge/update_controller.cpp
+    src/app/shell/bridge/translation_controller.cpp
     src/app/shell/bridge/app_facade.cpp
     src/app/shell/widgets/pin_image_window.cpp
     src/core/appcontext/app_context.cpp
@@ -46,6 +47,7 @@ set(IQTOOLS_SOURCES
     src/core/services/auto_start_manager.cpp
     src/core/services/i18n_manager.cpp
     src/core/services/update_checker.cpp
+    src/core/services/translation_service.cpp
     src/core/settings/settings_manager.cpp
     src/core/settings/shortcut_manager.cpp
     src/core/plugin/plugin_manager.cpp
@@ -66,6 +68,7 @@ set(IQTOOLS_HEADERS
     src/app/shell/bridge/settings_controller.h
     src/app/shell/bridge/window_controller.h
     src/app/shell/bridge/update_controller.h
+    src/app/shell/bridge/translation_controller.h
     src/app/shell/bridge/app_facade.h
     src/app/shell/widgets/pin_image_window.h
     src/core/appcontext/app_context.h
@@ -81,6 +84,7 @@ set(IQTOOLS_HEADERS
     src/core/services/auto_start_manager.h
     src/core/services/i18n_manager.h
     src/core/services/update_checker.h
+    src/core/services/translation_service.h
     src/core/settings/settings_manager.h
     src/core/settings/shortcut_manager.h
     src/core/plugin/plugin_manager.h
@@ -109,6 +113,7 @@ qt_add_qml_module(IQtools
         src/app/shell/qml/components/NavItem.qml
         src/app/shell/qml/components/BentoCard.qml
         src/app/shell/qml/components/ThemedButton.qml
+        src/app/shell/qml/components/TranslationEditorPanel.qml
         src/app/shell/qml/pages/HomePage.qml
         src/app/shell/qml/pages/CapturePage.qml
         src/app/shell/qml/pages/TranslatePage.qml

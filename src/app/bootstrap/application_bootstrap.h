@@ -9,6 +9,7 @@ class SettingsManager;
 class ShortcutManager;
 class I18nManager;
 class UpdateChecker;
+class TranslationService;
 }
 
 class QQmlApplicationEngine;
@@ -23,6 +24,7 @@ class LogConsoleController;
 class SettingsController;
 class WindowController;
 class UpdateController;
+class TranslationController;
 class AppFacade;
 }
 
@@ -63,6 +65,8 @@ private:
     std::unique_ptr<iqtools::core::ShortcutManager> m_shortcutManager;
     std::unique_ptr<iqtools::core::I18nManager> m_i18nManager;
     std::unique_ptr<iqtools::core::UpdateChecker> m_updateChecker;
+    std::unique_ptr<iqtools::core::TranslationService> m_translationService;
+    std::unique_ptr<iqtools::app::bridge::TranslationController> m_translationController;
     std::unique_ptr<iqtools::app::bridge::AppFacade> m_appFacade;
     iqtools::plugins::CapturePlugin* m_capturePlugin {nullptr};
 };

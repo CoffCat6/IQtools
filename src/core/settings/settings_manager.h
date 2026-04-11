@@ -48,6 +48,13 @@ public:
   QString language() const;
   void setLanguage(const QString &lang);
 
+  // ─── Translation settings ───
+  QString translationSourceLanguage() const;
+  void setTranslationSourceLanguage(const QString& lang);
+
+  QString translationTargetLanguage() const;
+  void setTranslationTargetLanguage(const QString& lang);
+
   // ─── Minimize to tray ───
   bool minimizeToTray() const;
   void setMinimizeToTray(bool enabled);
@@ -151,6 +158,8 @@ private:
   bool m_autoStart{false};
   bool m_checkUpdate{true};
   QString m_language;
+  QString m_translationSourceLanguage;
+  QString m_translationTargetLanguage;
   bool m_minimizeToTray{false};
   bool m_confirmOnExit{true};
   

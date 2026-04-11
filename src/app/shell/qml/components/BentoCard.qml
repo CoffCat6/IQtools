@@ -6,7 +6,7 @@ import IQtools
 Item {
     id: root
 
-    default property alias cardContent: contentContainer.data
+    default property alias cardContent: contentLayout.data
 
     property string title: ""
     property string description: ""
@@ -19,7 +19,7 @@ Item {
 
     readonly property bool hovered: clickable && hitArea.containsMouse
     readonly property bool pressed: clickable && hitArea.pressed
-    readonly property bool hasCustomContent: contentContainer.children.length > 0
+    readonly property bool hasCustomContent: contentLayout.children.length > 0
     readonly property color baseColor: {
         if (variant === "highlight") {
             return themeController.palette.bgCardHighlight
@@ -198,12 +198,12 @@ Item {
                 visible: root.description.length > 0
             }
 
-            Item {
-                id: contentContainer
+            ColumnLayout {
+                id: contentLayout
 
                 Layout.fillWidth: true
                 Layout.fillHeight: root.hasCustomContent
-                implicitHeight: root.hasCustomContent ? childrenRect.height : 0
+                spacing: 0
                 visible: root.hasCustomContent
             }
 
