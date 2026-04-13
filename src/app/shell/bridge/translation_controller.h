@@ -31,6 +31,7 @@ class TranslationController : public QObject {
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusChanged)
     Q_PROPERTY(QString statusLevel READ statusLevel NOTIFY statusChanged)
+    Q_PROPERTY(QString providerDisplayName READ providerDisplayName NOTIFY providerChanged)
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
     Q_PROPERTY(QVariantList sourceLanguages READ sourceLanguages CONSTANT)
     Q_PROPERTY(QVariantList targetLanguages READ targetLanguages CONSTANT)
@@ -53,6 +54,7 @@ public:
     QString errorMessage() const;
     QString statusMessage() const;
     QString statusLevel() const;
+    QString providerDisplayName() const;
     QVariantList availableLanguages() const;
     QVariantList sourceLanguages() const;
     QVariantList targetLanguages() const;
@@ -83,6 +85,7 @@ signals:
     void resultStaleChanged();
     void errorMessageChanged();
     void statusChanged();
+    void providerChanged();
     void errorOccurred(const QString& errorMessage);
 
 private slots:

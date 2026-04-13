@@ -18,6 +18,15 @@ constexpr auto kKeyCheckUpdate = "check_update";
 constexpr auto kKeyLanguage = "language";
 constexpr auto kKeyTranslationSourceLanguage = "translation_source_language";
 constexpr auto kKeyTranslationTargetLanguage = "translation_target_language";
+constexpr auto kKeyTranslationProviderType = "translation_provider_type";
+constexpr auto kKeyTranslationCustomEndpoint = "translation_custom_endpoint";
+constexpr auto kKeyTranslationCustomMethod = "translation_custom_method";
+constexpr auto kKeyTranslationCustomHeadersJson = "translation_custom_headers_json";
+constexpr auto kKeyTranslationCustomQueryTemplate = "translation_custom_query_template";
+constexpr auto kKeyTranslationCustomBodyTemplate = "translation_custom_body_template";
+constexpr auto kKeyTranslationCustomResultTextPath = "translation_custom_result_text_path";
+constexpr auto kKeyTranslationCustomDetectedSourcePath = "translation_custom_detected_source_path";
+constexpr auto kKeyTranslationCustomApiKey = "translation_custom_api_key";
 constexpr auto kKeyMinToTray = "minimize_to_tray";
 constexpr auto kKeyConfirmExit = "confirm_on_exit";
 // Logging keys
@@ -79,6 +88,64 @@ int normalizeCaptureDpi(int dpi) {
   default:
     return 0;
   }
+}
+
+QString normalizeTranslationProviderType(const QString& providerType) {
+  const QString normalized = providerType.trimmed().toLower();
+  if (normalized == QStringLiteral("custom_rest")) {
+    return QStringLiteral("custom_rest");
+  }
+  if (normalized == QStringLiteral("mymemory") ||
+      normalized == QStringLiteral("google_web")) {
+    return QStringLiteral("google_web");
+  }
+  return QStringLiteral("google_web");
+}
+
+QString normalizeTranslationMethod(const QString& method) {
+  const QString normalized = method.trimmed().toUpper();
+  if (normalized == QStringLiteral("GET")) {
+    return QStringLiteral("GET");
+  }
+  return QStringLiteral("POST");
+}
+
+QString normalizeHeadersJson(const QString& headersJson) {
+  const QString normalized = headersJson.trimmed();
+  return normalized.isEmpty() ? QStringLiteral("{}") : normalized;
+}
+
+TranslationProviderSettings normalizeTranslationProviderSettings(
+    const TranslationProviderSettings& settings) {
+  const QString defaultQueryTemplate =
+      QStringLiteral("q={{text}}&source={{source}}&target={{target}}&apiKey={{apiKey}}");
+  const QString defaultBodyTemplate =
+      QStringLiteral("{\n  \"text\": \"{{text}}\",\n  \"source\": \"{{source}}\",\n  \"target\": \"{{target}}\",\n  \"apiKey\": \"{{apiKey}}\"\n}");
+  TranslationProviderSettings normalized;
+  normalized.providerType =
+      normalizeTranslationProviderType(settings.providerType);
+  normalized.customEndpoint = settings.customEndpoint.trimmed();
+  normalized.customMethod =
+      normalizeTranslationMethod(settings.customMethod);
+  normalized.customHeadersJson =
+      normalizeHeadersJson(settings.customHeadersJson);
+  normalized.customQueryTemplate = settings.customQueryTemplate.trimmed();
+  if (normalized.customQueryTemplate.isEmpty()) {
+    normalized.customQueryTemplate = defaultQueryTemplate;
+  }
+  normalized.customBodyTemplate = settings.customBodyTemplate.trimmed();
+  if (normalized.customBodyTemplate.isEmpty()) {
+    normalized.customBodyTemplate = defaultBodyTemplate;
+  }
+  normalized.customResultTextPath =
+      settings.customResultTextPath.trimmed();
+  if (normalized.customResultTextPath.isEmpty()) {
+    normalized.customResultTextPath = QStringLiteral("translatedText");
+  }
+  normalized.customDetectedSourcePath =
+      settings.customDetectedSourcePath.trimmed();
+  normalized.customApiKey = settings.customApiKey.trimmed();
+  return normalized;
 }
 
 } // namespace
@@ -197,6 +264,60 @@ void SettingsManager::setTranslationTargetLanguage(const QString& lang) {
   m_translationTargetLanguage = lang;
   save();
   emit settingsChanged();
+}
+
+TranslationProviderSettings SettingsManager::translationProviderSettings() const {
+  return {
+      m_translationProviderType,
+      m_translationCustomEndpoint,
+      m_translationCustomMethod,
+      m_translationCustomHeadersJson,
+      m_translationCustomQueryTemplate,
+      m_translationCustomBodyTemplate,
+      m_translationCustomResultTextPath,
+      m_translationCustomDetectedSourcePath,
+      m_translationCustomApiKey,
+  };
+}
+
+bool SettingsManager::setTranslationProviderSettings(
+    const TranslationProviderSettings& settings) {
+  const TranslationProviderSettings normalized =
+      normalizeTranslationProviderSettings(settings);
+  if (translationProviderSettings() == normalized) {
+    return true;
+  }
+
+  const TranslationProviderSettings previous = translationProviderSettings();
+
+  m_translationProviderType = normalized.providerType;
+  m_translationCustomEndpoint = normalized.customEndpoint;
+  m_translationCustomMethod = normalized.customMethod;
+  m_translationCustomHeadersJson = normalized.customHeadersJson;
+  m_translationCustomQueryTemplate = normalized.customQueryTemplate;
+  m_translationCustomBodyTemplate = normalized.customBodyTemplate;
+  m_translationCustomResultTextPath = normalized.customResultTextPath;
+  m_translationCustomDetectedSourcePath =
+      normalized.customDetectedSourcePath;
+  m_translationCustomApiKey = normalized.customApiKey;
+
+  const bool saved = save();
+  if (saved) {
+    emit settingsChanged();
+    return true;
+  }
+
+  m_translationProviderType = previous.providerType;
+  m_translationCustomEndpoint = previous.customEndpoint;
+  m_translationCustomMethod = previous.customMethod;
+  m_translationCustomHeadersJson = previous.customHeadersJson;
+  m_translationCustomQueryTemplate = previous.customQueryTemplate;
+  m_translationCustomBodyTemplate = previous.customBodyTemplate;
+  m_translationCustomResultTextPath = previous.customResultTextPath;
+  m_translationCustomDetectedSourcePath =
+      previous.customDetectedSourcePath;
+  m_translationCustomApiKey = previous.customApiKey;
+  return false;
 }
 
 // ─── Minimize to tray ───
@@ -598,6 +719,17 @@ void SettingsManager::loadDefaults() {
   m_language = QStringLiteral("zh_CN");
   m_translationSourceLanguage = QStringLiteral("auto");
   m_translationTargetLanguage = QStringLiteral("zh-CN");
+  m_translationProviderType = QStringLiteral("google_web");
+  m_translationCustomEndpoint.clear();
+  m_translationCustomMethod = QStringLiteral("POST");
+  m_translationCustomHeadersJson = QStringLiteral("{}");
+  m_translationCustomQueryTemplate =
+      QStringLiteral("q={{text}}&source={{source}}&target={{target}}&apiKey={{apiKey}}");
+  m_translationCustomBodyTemplate =
+      QStringLiteral("{\n  \"text\": \"{{text}}\",\n  \"source\": \"{{source}}\",\n  \"target\": \"{{target}}\",\n  \"apiKey\": \"{{apiKey}}\"\n}");
+  m_translationCustomResultTextPath = QStringLiteral("translatedText");
+  m_translationCustomDetectedSourcePath.clear();
+  m_translationCustomApiKey.clear();
   m_minimizeToTray = false;
   m_confirmOnExit = true;
   // Logging defaults
@@ -648,6 +780,50 @@ void SettingsManager::syncFromStorage() {
   m_translationTargetLanguage =
       m_storage->value(QLatin1String(kKeyTranslationTargetLanguage),
                        QStringLiteral("zh-CN"))
+          .toString()
+          .trimmed();
+  m_translationProviderType =
+      normalizeTranslationProviderType(
+          m_storage->value(QLatin1String(kKeyTranslationProviderType),
+                           QStringLiteral("google_web"))
+              .toString());
+  m_translationCustomEndpoint =
+      m_storage->value(QLatin1String(kKeyTranslationCustomEndpoint),
+                       QString())
+          .toString()
+          .trimmed();
+  m_translationCustomMethod =
+      normalizeTranslationMethod(
+          m_storage->value(QLatin1String(kKeyTranslationCustomMethod),
+                           QStringLiteral("POST"))
+              .toString());
+  m_translationCustomHeadersJson =
+      normalizeHeadersJson(
+          m_storage->value(QLatin1String(kKeyTranslationCustomHeadersJson),
+                           QStringLiteral("{}"))
+              .toString());
+  m_translationCustomQueryTemplate =
+      m_storage->value(QLatin1String(kKeyTranslationCustomQueryTemplate),
+                       QStringLiteral("q={{text}}&source={{source}}&target={{target}}&apiKey={{apiKey}}"))
+          .toString()
+          .trimmed();
+  m_translationCustomBodyTemplate =
+      m_storage->value(QLatin1String(kKeyTranslationCustomBodyTemplate),
+                       QStringLiteral("{\n  \"text\": \"{{text}}\",\n  \"source\": \"{{source}}\",\n  \"target\": \"{{target}}\",\n  \"apiKey\": \"{{apiKey}}\"\n}"))
+          .toString()
+          .trimmed();
+  m_translationCustomResultTextPath =
+      m_storage->value(QLatin1String(kKeyTranslationCustomResultTextPath),
+                       QStringLiteral("translatedText"))
+          .toString()
+          .trimmed();
+  m_translationCustomDetectedSourcePath =
+      m_storage->value(QLatin1String(kKeyTranslationCustomDetectedSourcePath),
+                       QString())
+          .toString()
+          .trimmed();
+  m_translationCustomApiKey =
+      m_storage->value(QLatin1String(kKeyTranslationCustomApiKey), QString())
           .toString()
           .trimmed();
   m_minimizeToTray =
@@ -760,6 +936,24 @@ void SettingsManager::syncToStorage() {
                 m_translationSourceLanguage);
   values.insert(QLatin1String(kKeyTranslationTargetLanguage),
                 m_translationTargetLanguage);
+  values.insert(QLatin1String(kKeyTranslationProviderType),
+                m_translationProviderType);
+  values.insert(QLatin1String(kKeyTranslationCustomEndpoint),
+                m_translationCustomEndpoint);
+  values.insert(QLatin1String(kKeyTranslationCustomMethod),
+                m_translationCustomMethod);
+  values.insert(QLatin1String(kKeyTranslationCustomHeadersJson),
+                m_translationCustomHeadersJson);
+  values.insert(QLatin1String(kKeyTranslationCustomQueryTemplate),
+                m_translationCustomQueryTemplate);
+  values.insert(QLatin1String(kKeyTranslationCustomBodyTemplate),
+                m_translationCustomBodyTemplate);
+  values.insert(QLatin1String(kKeyTranslationCustomResultTextPath),
+                m_translationCustomResultTextPath);
+  values.insert(QLatin1String(kKeyTranslationCustomDetectedSourcePath),
+                m_translationCustomDetectedSourcePath);
+  values.insert(QLatin1String(kKeyTranslationCustomApiKey),
+                m_translationCustomApiKey);
   values.insert(QLatin1String(kKeyMinToTray), m_minimizeToTray);
   values.insert(QLatin1String(kKeyConfirmExit), m_confirmOnExit);
   values.insert(QLatin1String(kKeyLogConsole), m_logConsoleEnabled);

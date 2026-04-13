@@ -74,7 +74,7 @@ Item {
                         id: providerLabel
 
                         anchors.centerIn: parent
-                        text: "MyMemory API"
+                        text: translationController.providerDisplayName
                         color: themeController.palette.accentPrimary
                         font.pixelSize: 12
                         font.bold: true
@@ -204,13 +204,19 @@ Item {
                     }
 
                     Rectangle {
+                        id: statusPanel
+
                         Layout.fillWidth: true
+                        implicitHeight: statusRow.implicitHeight + 24
+                        Layout.preferredHeight: implicitHeight
                         radius: themeController.palette.radiusCard
                         color: root.statusBackground
                         border.width: 1
                         border.color: Qt.rgba(1, 1, 1, themeController.dark ? 0.18 : 0.28)
 
                         RowLayout {
+                            id: statusRow
+
                             anchors.fill: parent
                             anchors.margins: 12
                             spacing: 10
@@ -363,57 +369,6 @@ Item {
 
             BentoCard {
                 Layout.fillWidth: true
-                title: qsTr("快捷目标语言")
-                description: qsTr("点击常用语言可快速切换目标语言。")
-                meta: "Quick Targets"
-                variant: "quiet"
-
-                Flow {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    Repeater {
-                        model: translationController.targetLanguages
-
-                        Rectangle {
-                            required property int index
-                            required property var modelData
-
-                            radius: 16
-                            color: translationController.targetLanguage === modelData.code
-                                   ? Qt.rgba(124 / 255, 156 / 255, 1.0, themeController.dark ? 0.22 : 0.14)
-                                   : themeController.palette.bgCardHighlight
-                            border.width: 1
-                            border.color: translationController.targetLanguage === modelData.code
-                                          ? themeController.palette.accentPrimary
-                                          : themeController.palette.borderDefault
-                            implicitWidth: chipLabel.implicitWidth + 24
-                            implicitHeight: 32
-
-                            Label {
-                                id: chipLabel
-
-                                anchors.centerIn: parent
-                                text: modelData.nativeName
-                                color: translationController.targetLanguage === modelData.code
-                                       ? themeController.palette.accentPrimary
-                                       : themeController.palette.textSecondary
-                                font.pixelSize: 12
-                                font.family: "Segoe UI"
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: translationController.setTargetLanguageByIndex(index)
-                            }
-                        }
-                    }
-                }
-            }
-
-            BentoCard {
-                Layout.fillWidth: true
                 title: qsTr("体验建议")
                 meta: "Tips"
                 variant: "quiet"
@@ -447,7 +402,7 @@ Item {
                     }
 
                     Label {
-                        text: "• " + qsTr("MyMemory 更适合通用文本和轻量使用；高频或专业术语场景建议后续接入可配置 Provider。")
+                        text: "• " + qsTr("当前 Provider 可在设置页切换或配置；高频、专业术语或私有化场景建议改用自定义 REST 接口。")
                         color: themeController.palette.textSecondary
                         font.pixelSize: 13
                         font.family: "Segoe UI"

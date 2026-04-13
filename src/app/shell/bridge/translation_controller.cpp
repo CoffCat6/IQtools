@@ -3,6 +3,7 @@
 #include <QtGui/QClipboard>
 #include <QtGui/QGuiApplication>
 
+#include "core/services/translation_provider.h"
 #include "core/services/translation_service.h"
 #include "core/settings/settings_manager.h"
 #include "infra/logging/logger.h"
@@ -100,6 +101,11 @@ TranslationController::TranslationController(
                 &TranslationController::onTranslationCanceled);
         m_isTranslating = m_translationService->isTranslating();
     }
+
+    if (m_settingsManager != nullptr) {
+        connect(m_settingsManager, &iqtools::core::SettingsManager::settingsChanged,
+                this, &TranslationController::providerChanged);
+    }
 }
 
 TranslationController::~TranslationController() = default;
@@ -162,6 +168,16 @@ QString TranslationController::statusMessage() const
 QString TranslationController::statusLevel() const
 {
     return m_statusLevel;
+}
+
+QString TranslationController::providerDisplayName() const
+{
+    QString providerType = QStringLiteral("google_web");
+    if (m_settingsManager != nullptr) {
+        providerType =
+            m_settingsManager->translationProviderSettings().providerType;
+    }
+    return iqtools::core::translationProviderDisplayName(providerType);
 }
 
 QVariantList TranslationController::availableLanguages() const

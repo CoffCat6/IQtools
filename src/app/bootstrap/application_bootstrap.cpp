@@ -18,6 +18,7 @@
 #include "app/shell/bridge/settings_controller.h"
 #include "app/shell/bridge/theme_controller.h"
 #include "app/shell/bridge/tool_list_model.h"
+#include "app/shell/bridge/translation_settings_controller.h"
 #include "app/shell/bridge/update_controller.h"
 #include "app/shell/bridge/translation_controller.h"
 #include "app/shell/bridge/window_controller.h"
@@ -110,7 +111,8 @@ void ApplicationBootstrap::initCore() {
   m_updateChecker = std::make_unique<iqtools::core::UpdateChecker>();
 
   // Initialize translation service
-  m_translationService = std::make_unique<iqtools::core::TranslationService>();
+  m_translationService = std::make_unique<iqtools::core::TranslationService>(
+      m_settingsManager.get());
 
   iqtools::infra::logging::Logger::info(
       QStringLiteral("app.bootstrap"),
@@ -146,6 +148,9 @@ void ApplicationBootstrap::initPresentation() {
       m_settingsManager.get());
   m_updateController = std::make_unique<iqtools::app::bridge::UpdateController>(
       m_updateChecker.get());
+  m_translationSettingsController =
+      std::make_unique<iqtools::app::bridge::TranslationSettingsController>(
+          m_settingsManager.get());
   m_translationController = std::make_unique<iqtools::app::bridge::TranslationController>(
       m_translationService.get(), m_settingsManager.get());
   m_appFacade = std::make_unique<iqtools::app::bridge::AppFacade>(
@@ -181,6 +186,8 @@ void ApplicationBootstrap::initPresentation() {
                                   m_logConsoleController.get());
   rootContext->setContextProperty(QStringLiteral("settingsCtrl"),
                                   m_settingsController.get());
+  rootContext->setContextProperty(QStringLiteral("translationSettings"),
+                                  m_translationSettingsController.get());
   rootContext->setContextProperty(QStringLiteral("windowController"),
                                   m_windowController.get());
   rootContext->setContextProperty(QStringLiteral("updateController"),

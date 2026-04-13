@@ -25,6 +25,7 @@ class SettingsController;
 class WindowController;
 class UpdateController;
 class TranslationController;
+class TranslationSettingsController;
 class AppFacade;
 }
 
@@ -61,6 +62,7 @@ private:
     std::unique_ptr<iqtools::app::bridge::SettingsController> m_settingsController;
     std::unique_ptr<iqtools::app::bridge::WindowController> m_windowController;
     std::unique_ptr<iqtools::app::bridge::UpdateController> m_updateController;
+    std::unique_ptr<iqtools::app::bridge::TranslationSettingsController> m_translationSettingsController;
     std::unique_ptr<iqtools::core::SettingsManager> m_settingsManager;
     std::unique_ptr<iqtools::core::ShortcutManager> m_shortcutManager;
     std::unique_ptr<iqtools::core::I18nManager> m_i18nManager;

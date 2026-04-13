@@ -114,36 +114,49 @@ FocusScope {
                 color: themeController.palette.bgPanel
                 border.width: 1
                 border.color: themeController.palette.borderDefault
+                clip: true
 
-                TextArea {
-                    id: editor
+                ScrollView {
+                    id: editorScrollView
 
                     anchors.fill: parent
                     anchors.margins: 12
-                    readOnly: root.readOnly
-                    enabled: root.panelEnabled
-                    color: root.panelEnabled
-                           ? themeController.palette.textPrimary
-                           : themeController.palette.textMuted
-                    font.pixelSize: 15
-                    font.family: "Segoe UI"
-                    wrapMode: TextArea.Wrap
-                    placeholderText: root.placeholderText
-                    placeholderTextColor: themeController.palette.textMuted
-                    selectByMouse: true
-                    activeFocusOnPress: true
                     clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                    ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
                     background: null
 
-                    Component.onCompleted: {
-                        syncInProgress = true
-                        text = root.textValue
-                        syncInProgress = false
-                    }
+                    TextArea {
+                        id: editor
 
-                    onTextChanged: {
-                        if (!root.syncInProgress) {
-                            root.textEdited(text)
+                        width: editorScrollView.availableWidth
+                        readOnly: root.readOnly
+                        enabled: root.panelEnabled
+                        color: root.panelEnabled
+                               ? themeController.palette.textPrimary
+                               : themeController.palette.textMuted
+                        font.pixelSize: 15
+                        font.family: "Segoe UI"
+                        wrapMode: TextArea.Wrap
+                        placeholderText: root.placeholderText
+                        placeholderTextColor: themeController.palette.textMuted
+                        selectByMouse: true
+                        activeFocusOnPress: true
+                        persistentSelection: true
+                        padding: 0
+                        background: null
+
+                        Component.onCompleted: {
+                            syncInProgress = true
+                            text = root.textValue
+                            syncInProgress = false
+                        }
+
+                        onTextChanged: {
+                            if (!root.syncInProgress) {
+                                root.textEdited(text)
+                            }
                         }
                     }
                 }

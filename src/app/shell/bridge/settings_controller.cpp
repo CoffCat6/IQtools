@@ -270,6 +270,8 @@ void SettingsController::resetToDefaults()
     m_manager->setLanguage(QStringLiteral("zh_CN"));
     m_manager->setMinimizeToTray(false);
     m_manager->setConfirmOnExit(true);
+    m_manager->setTranslationProviderSettings(
+        iqtools::core::TranslationProviderSettings{});
 
     // Sync OS auto-start
     iqtools::core::AutoStartManager::setEnabled(false);

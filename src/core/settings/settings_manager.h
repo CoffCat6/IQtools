@@ -12,6 +12,20 @@ class SettingsStorage;
 
 namespace iqtools::core {
 
+struct TranslationProviderSettings {
+  QString providerType;
+  QString customEndpoint;
+  QString customMethod;
+  QString customHeadersJson;
+  QString customQueryTemplate;
+  QString customBodyTemplate;
+  QString customResultTextPath;
+  QString customDetectedSourcePath;
+  QString customApiKey;
+
+  bool operator==(const TranslationProviderSettings& other) const = default;
+};
+
 /// Application settings manager.
 /// Manages all persistent settings: theme, auto-start, update checking,
 /// language, etc. Loads from and saves to a YAML file (setting.yaml in app data
@@ -54,6 +68,9 @@ public:
 
   QString translationTargetLanguage() const;
   void setTranslationTargetLanguage(const QString& lang);
+
+  TranslationProviderSettings translationProviderSettings() const;
+  bool setTranslationProviderSettings(const TranslationProviderSettings& settings);
 
   // ─── Minimize to tray ───
   bool minimizeToTray() const;
@@ -160,6 +177,15 @@ private:
   QString m_language;
   QString m_translationSourceLanguage;
   QString m_translationTargetLanguage;
+  QString m_translationProviderType;
+  QString m_translationCustomEndpoint;
+  QString m_translationCustomMethod;
+  QString m_translationCustomHeadersJson;
+  QString m_translationCustomQueryTemplate;
+  QString m_translationCustomBodyTemplate;
+  QString m_translationCustomResultTextPath;
+  QString m_translationCustomDetectedSourcePath;
+  QString m_translationCustomApiKey;
   bool m_minimizeToTray{false};
   bool m_confirmOnExit{true};
   

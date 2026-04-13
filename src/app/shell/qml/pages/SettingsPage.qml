@@ -16,6 +16,20 @@ Item {
         }
     }
 
+    function applyTranslationSettings() {
+        const ok = translationSettings.apply()
+        if (ok) {
+            appFacade.logInfo("settings.translation", "Translation settings applied from UI")
+        }
+    }
+
+    function translationProviderIndex(providerType) {
+        if (providerType === "custom_rest") {
+            return 1
+        }
+        return 0
+    }
+
     function selectedShortcutData() {
         const entries = settingsCtrl.shortcuts
         for (let i = 0; i < entries.length; ++i) {
@@ -264,7 +278,262 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 3. 日志设置 (Logging)
+            // 3. 翻译设置 (Translation)
+            // ═══════════════════════════════════════════
+            BentoCard {
+                Layout.fillWidth: true
+                title: qsTr("翻译设置")
+                description: qsTr("选择翻译 Provider，并按需配置自定义 REST 接口。")
+                meta: "Translation"
+                variant: "quiet"
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: themeController.palette.spacingMd
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: themeController.palette.spacingMd
+
+                        Label {
+                            text: qsTr("当前 Provider")
+                            color: themeController.palette.textSecondary
+                            Layout.preferredWidth: 100
+                        }
+
+                        ComboBox {
+                            id: translationProviderCombo
+                            Layout.preferredWidth: 220
+                            model: [
+                                { value: "google_web", label: qsTr("Google 翻译（内置）") },
+                                { value: "custom_rest", label: qsTr("自定义 REST 接口") }
+                            ]
+                            textRole: "label"
+                            currentIndex: root.translationProviderIndex(translationSettings.providerType)
+                            onActivated: translationSettings.providerType = model[currentIndex].value
+                        }
+
+                        Label {
+                            text: translationSettings.providerType === "custom_rest"
+                                  ? qsTr("将使用你在下方保存的接口配置进行翻译")
+                                  : qsTr("使用内置 Google Translate Web，无需额外配置")
+                            color: themeController.palette.textMuted
+                            font.pixelSize: 12
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: themeController.palette.borderDefault
+                        opacity: 0.5
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: translationSettings.providerType === "google_web"
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("内置 Google 翻译使用网页端请求返回的结果，无需额外配置。若你有自建接口或第三方翻译 API，可切换到自定义 REST 接口。")
+                            color: themeController.palette.textSecondary
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: translationSettings.providerType === "custom_rest"
+                        spacing: themeController.palette.spacingMd
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: themeController.palette.spacingMd
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Label {
+                                    text: qsTr("接口 URL")
+                                    color: themeController.palette.textSecondary
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: translationSettings.customEndpoint
+                                    placeholderText: qsTr("例如 https://api.example.com/translate")
+                                    onTextEdited: translationSettings.customEndpoint = text
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.preferredWidth: 180
+                                spacing: 6
+
+                                Label {
+                                    text: qsTr("请求方法")
+                                    color: themeController.palette.textSecondary
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: ["GET", "POST"]
+                                    currentIndex: translationSettings.customMethod === "GET" ? 0 : 1
+                                    onActivated: translationSettings.customMethod = currentText
+                                }
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Label {
+                                text: qsTr("API Key / Token")
+                                color: themeController.palette.textSecondary
+                            }
+
+                            TextField {
+                                Layout.fillWidth: true
+                                text: translationSettings.customApiKey
+                                placeholderText: qsTr("可留空；若模板或请求头中使用 {{apiKey}} 会注入这里的值")
+                                echoMode: TextInput.Password
+                                onTextEdited: translationSettings.customApiKey = text
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Label {
+                                text: qsTr("请求头 JSON")
+                                color: themeController.palette.textSecondary
+                            }
+
+                            CodeInputArea {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 96
+                                text: translationSettings.customHeadersJson
+                                placeholderText: qsTr("{\"Authorization\":\"Bearer {{apiKey}}\"}")
+                                onTextEdited: translationSettings.customHeadersJson = text
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Label {
+                                text: translationSettings.customMethod === "GET"
+                                      ? qsTr("Query Template")
+                                      : qsTr("Body Template")
+                                color: themeController.palette.textSecondary
+                            }
+
+                            CodeInputArea {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 120
+                                text: translationSettings.customMethod === "GET"
+                                      ? translationSettings.customQueryTemplate
+                                      : translationSettings.customBodyTemplate
+                                placeholderText: translationSettings.customMethod === "GET"
+                                                 ? qsTr("例如 q={{text}}&source={{source}}&target={{target}}")
+                                                 : qsTr("例如 {\"text\":\"{{text}}\",\"source\":\"{{source}}\",\"target\":\"{{target}}\"}")
+                                onTextEdited: {
+                                    if (translationSettings.customMethod === "GET") {
+                                        translationSettings.customQueryTemplate = text
+                                    } else {
+                                        translationSettings.customBodyTemplate = text
+                                    }
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: themeController.palette.spacingMd
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Label {
+                                    text: qsTr("译文字段路径")
+                                    color: themeController.palette.textSecondary
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: translationSettings.customResultTextPath
+                                    placeholderText: qsTr("例如 data.translations.0.text")
+                                    onTextEdited: translationSettings.customResultTextPath = text
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Label {
+                                    text: qsTr("检测源语言路径（可选）")
+                                    color: themeController.palette.textSecondary
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: translationSettings.customDetectedSourcePath
+                                    placeholderText: qsTr("例如 data.detectedSource")
+                                    onTextEdited: translationSettings.customDetectedSourcePath = text
+                                }
+                            }
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("支持占位符：{{text}}、{{source}}、{{target}}、{{apiKey}}。GET 会对占位符进行 URL 编码；POST 默认按 JSON 字符串转义。")
+                            color: themeController.palette.textMuted
+                            font.pixelSize: 12
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: themeController.palette.spacingMd
+
+                        Button {
+                            text: qsTr("重置翻译设置")
+                            enabled: translationSettings.dirty
+                            onClicked: translationSettings.resetPending()
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        ThemedButton {
+                            text: qsTr("应用翻译设置")
+                            enabled: translationSettings.dirty
+                            onClicked: root.applyTranslationSettings()
+                        }
+                    }
+
+                    Label {
+                        visible: translationSettings.statusMessage.length > 0
+                        text: translationSettings.statusMessage
+                        color: translationSettings.statusMessage.indexOf(qsTr("已保存")) >= 0
+                               ? themeController.palette.accentSecondary
+                               : "#ff8a8a"
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════
+            // 4. 日志设置 (Logging)
             // ═══════════════════════════════════════════
             BentoCard {
                 Layout.fillWidth: true
@@ -367,7 +636,7 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 4. 快捷键设置 (Shortcuts)
+            // 5. 快捷键设置 (Shortcuts)
             // ═══════════════════════════════════════════
             BentoCard {
                 Layout.fillWidth: true
@@ -621,7 +890,7 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 5. 关于与更新 (About & Updates)
+            // 6. 关于与更新 (About & Updates)
             // ═══════════════════════════════════════════
             BentoCard {
                 Layout.fillWidth: true
@@ -798,7 +1067,7 @@ Item {
             }
 
             // ═══════════════════════════════════════════
-            // 6. 操作栏 (Actions)
+            // 7. 操作栏 (Actions)
             // ═══════════════════════════════════════════
             RowLayout {
                 Layout.fillWidth: true
@@ -873,6 +1142,43 @@ Item {
             id: toggle
 
             onToggled: settingSwitchRoot.toggled()
+        }
+    }
+
+    component CodeInputArea: ScrollView {
+        id: codeInputRoot
+        property alias text: codeEditor.text
+        property string placeholderText: ""
+
+        signal textEdited(string text)
+
+        clip: true
+        ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+        background: Rectangle {
+            radius: themeController.palette.radiusCard - 4
+            color: themeController.palette.bgPanel
+            border.width: 1
+            border.color: themeController.palette.borderDefault
+        }
+
+        TextArea {
+            id: codeEditor
+
+            width: codeInputRoot.availableWidth
+            placeholderText: codeInputRoot.placeholderText
+            placeholderTextColor: themeController.palette.textMuted
+            color: themeController.palette.textPrimary
+            font.pixelSize: 13
+            font.family: "Cascadia Mono"
+            wrapMode: TextArea.Wrap
+            selectByMouse: true
+            persistentSelection: true
+            padding: 12
+            background: null
+
+            onTextChanged: codeInputRoot.textEdited(text)
         }
     }
 }
